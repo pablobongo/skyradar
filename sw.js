@@ -1,26 +1,79 @@
-const CACHE = 'skyradar-v1';
-const ASSETS = ['/', '/index.html', '/manifest.json', '/icon.svg'];
+// SkyRadar Service Worker v2.3
+// Rileva automaticamente il base path (funziona su GitHub Pages e qualsiasi subdirectory)
+const CACHE = 'skyradar-v23';
+const BASE = self.location.pathname.replace('/sw.js', '');
 
+const SHELL = [
+  BASE + '/',
+  BASE + '/index.html',
+  BASE + '/manifest.json',
+  BASE + '/icon.svg',
+  BASE + '/icon-192.png',
+  BASE + '/icon-512.png',
+];
+
+// Installa: metti in cache l'app shell
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
+  e.waitUntil(
+    caches.open(CACHE)
+      .then(c => c.addAll(SHELL))
+      .catch(err => console.warn('SW install cache error:', err))
+  );
   self.skipWaiting();
 });
 
+// Attiva: elimina cache vecchie
 self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(keys =>
-    Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-  ));
+  e.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+    )
+  );
   self.clients.claim();
 });
 
+// Fetch: strategia ibrida
 self.addEventListener('fetch', e => {
-  // API calls: sempre dalla rete
-  if (e.request.url.includes('airplanes.live') || e.request.url.includes('hexdb.io')) {
-    e.respondWith(fetch(e.request).catch(() => new Response('', { status: 503 })));
+  const url = new URL(e.request.url);
+
+  // API esterne -> sempre dalla rete, nessuna cache
+  if (url.hostname.includes('airplanes.live') ||
+      url.hostname.includes('hexdb.io') ||
+      url.hostname.includes('adsbdb.com') ||
+      url.hostname.includes('openstreetmap.org') ||
+      url.hostname.includes('flagcdn.com') ||
+      url.hostname.includes('unpkg.com') ||
+      url.hostname.includes('cartocdn.com') ||
+      url.hostname.includes('basemaps')) {
+    e.respondWith(
+      fetch(e.request).catch(() => new Response('', { status: 503 }))
+    );
     return;
   }
-  // App shell: cache-first
+
+  // App shell -> cache first, poi rete (con aggiornamento in background)
   e.respondWith(
-    caches.match(e.request).then(cached => cached || fetch(e.request))
+    caches.match(e.request).then(cached => {
+      if (cached) {
+        // Serve dalla cache immediatamente, aggiorna in background
+        fetch(e.request).then(fresh => {
+          if (fresh && fresh.status === 200) {
+            caches.open(CACHE).then(c => c.put(e.request, fresh));
+          }
+        }).catch(() => {});
+        return cached;
+      }
+      // Non in cache -> vai in rete
+      return fetch(e.request).then(response => {
+        if (response && response.status === 200) {
+          const clone = response.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
+        }
+        return response;
+      }).catch(() => {
+        // Rete non disponibile e non in cache -> serve index.html come fallback
+        return caches.match(BASE + '/index.html');
+      });
+    })
   );
 });

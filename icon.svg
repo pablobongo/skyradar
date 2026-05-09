@@ -1,17 +1,27 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" fill="#030a03"/>
-  <circle cx="256" cy="256" r="230" fill="none" stroke="#00ff46" stroke-width="6" opacity="0.5"/>
-  <circle cx="256" cy="256" r="160" fill="none" stroke="#00ff46" stroke-width="3" opacity="0.3"/>
-  <circle cx="256" cy="256" r="90" fill="none" stroke="#00ff46" stroke-width="2" opacity="0.2"/>
-  <line x1="256" y1="26" x2="256" y2="486" stroke="#00ff46" stroke-width="2" opacity="0.15"/>
-  <line x1="26" y1="256" x2="486" y2="256" stroke="#00ff46" stroke-width="2" opacity="0.15"/>
-  <!-- sweep line -->
-  <line x1="256" y1="256" x2="486" y2="256" stroke="#00ff46" stroke-width="4" opacity="0.9"/>
-  <!-- centro -->
-  <circle cx="256" cy="256" r="10" fill="#00ff46"/>
+  <rect width="512" height="512" rx="64" fill="#030a03"/>
+  <circle cx="256" cy="256" r="215" fill="none" stroke="#00ff46" stroke-width="4" opacity="0.5"/>
+  <circle cx="256" cy="256" r="148" fill="none" stroke="#00ff46" stroke-width="2.5" opacity="0.35"/>
+  <circle cx="256" cy="256" r="80" fill="none" stroke="#00ff46" stroke-width="1.5" opacity="0.22"/>
+  <line x1="256" y1="41" x2="256" y2="471" stroke="#00ff46" stroke-width="1" opacity="0.18"/>
+  <line x1="41" y1="256" x2="471" y2="256" stroke="#00ff46" stroke-width="1" opacity="0.18"/>
+  <!-- sweep trailing -->
+  <line x1="256" y1="256" x2="462" y2="108" stroke="#00ff46" stroke-width="2" opacity="0.12"/>
+  <line x1="256" y1="256" x2="448" y2="140" stroke="#00ff46" stroke-width="2" opacity="0.20"/>
+  <line x1="256" y1="256" x2="428" y2="172" stroke="#00ff46" stroke-width="2" opacity="0.30"/>
+  <!-- sweep line principale -->
+  <line x1="256" y1="256" x2="406" y2="206" stroke="#00ff46" stroke-width="5" opacity="0.90" stroke-linecap="round"/>
   <!-- blip aereo -->
-  <circle cx="360" cy="160" r="12" fill="#00ff46" opacity="0.8"/>
-  <circle cx="360" cy="160" r="20" fill="none" stroke="#00ff46" stroke-width="2" opacity="0.4"/>
+  <circle cx="356" cy="160" r="24" fill="#00ff46" opacity="0.18"/>
+  <circle cx="356" cy="160" r="14" fill="#00ff46" opacity="0.45"/>
+  <circle cx="356" cy="160" r="7" fill="#00ff46" opacity="1"/>
+  <!-- centro utente -->
+  <circle cx="256" cy="256" r="8" fill="#00ff46"/>
+  <line x1="240" y1="256" x2="272" y2="256" stroke="#030a03" stroke-width="2.5"/>
+  <line x1="256" y1="240" x2="256" y2="272" stroke="#030a03" stroke-width="2.5"/>
   <!-- testo -->
-  <text x="256" y="460" text-anchor="middle" font-family="'Courier New',monospace" font-size="36" fill="#00ff46" opacity="0.7" letter-spacing="8">SKYRADAR</text>
+  <text x="36" y="86" font-family="'Courier New',monospace" font-size="42" font-weight="bold" fill="#00ff46" opacity="0.85" letter-spacing="2">SKY</text>
+  <text x="36" y="122" font-family="'Courier New',monospace" font-size="28" fill="#00ff46" opacity="0.5" letter-spacing="3">RADAR</text>
+  <!-- bordo -->
+  <rect width="512" height="512" rx="64" fill="none" stroke="#00ff46" stroke-width="3" opacity="0.35"/>
 </svg>
