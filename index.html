@@ -10,88 +10,105 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="SkyRadar">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
     *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-    :root{
-      --g:#00ff46;--gm:rgba(0,255,70,.75);--gf:rgba(0,255,70,.14);
-      --bg:#030a03;--f:'Courier New','Lucida Console',monospace;
-    }
+    :root{--g:#00ff46;--gm:rgba(0,255,70,.75);--gf:rgba(0,255,70,.14);--bg:#030a03;--f:'Courier New','Lucida Console',monospace;}
     html,body{height:100%;background:var(--bg);color:var(--g);font-family:var(--f);overflow:hidden;}
-    #loading{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;
-      align-items:center;justify-content:center;gap:18px;z-index:200;font-size:12px;letter-spacing:4px;font-weight:bold;}
+    #loading{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;z-index:200;font-size:12px;letter-spacing:4px;font-weight:bold;}
     #loading.hidden{display:none;}
-    .spinner{width:44px;height:44px;border:2px solid rgba(0,255,70,.15);
-      border-top-color:var(--g);border-radius:50%;animation:spin 1s linear infinite;}
+    .spinner{width:44px;height:44px;border:2px solid rgba(0,255,70,.15);border-top-color:var(--g);border-radius:50%;animation:spin 1s linear infinite;}
     @keyframes spin{to{transform:rotate(360deg)}}
+
     #app{display:flex;flex-direction:column;height:100vh;height:100dvh;}
+
     /* HEADER */
-    #header{display:flex;justify-content:space-between;align-items:center;
-      padding:7px 12px;border-bottom:1px solid var(--gf);flex-shrink:0;gap:8px;}
-    .hlogo{font-size:13px;font-weight:bold;display:flex;align-items:center;gap:6px;flex-shrink:0;letter-spacing:2px;}
+    #header{display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid var(--gf);flex-shrink:0;gap:6px;}
+    .hlogo{font-size:12px;font-weight:bold;display:flex;align-items:center;gap:5px;flex-shrink:0;letter-spacing:2px;}
     .dot{width:7px;height:7px;border-radius:50%;background:var(--g);animation:blink 2s infinite;}
     @keyframes blink{0%,100%{opacity:1}50%{opacity:.15}}
-    .hver{font-size:9px;color:var(--gm);letter-spacing:2px;font-weight:bold;}
-    #hclock{font-size:12px;font-weight:bold;color:var(--gm);flex-shrink:0;letter-spacing:1px;}
-    #audiobtn{background:none;border:1px solid var(--gf);color:var(--g);font-size:15px;
-      cursor:pointer;width:30px;height:24px;display:flex;align-items:center;
-      justify-content:center;flex-shrink:0;padding:0;}
-    #hcount{font-size:11px;font-weight:bold;color:var(--g);flex-shrink:0;letter-spacing:2px;}
-    /* RADAR */
+    .hver{font-size:9px;color:var(--gm);letter-spacing:2px;}
+    #hclock{font-size:11px;font-weight:bold;color:var(--gm);flex-shrink:0;}
+    .hbtn{background:none;border:1px solid var(--gf);color:var(--g);font-size:11px;font-weight:bold;
+      cursor:pointer;height:24px;padding:0 7px;letter-spacing:1px;flex-shrink:0;white-space:nowrap;}
+    .hbtn:active{background:rgba(0,255,70,.1);}
+    #hcount{font-size:10px;font-weight:bold;color:var(--g);flex-shrink:0;letter-spacing:1px;}
+
+    /* RADAR MODE */
     #radar-wrap{display:flex;justify-content:center;align-items:center;flex-shrink:0;padding:6px 8px 3px;}
     #rc{cursor:crosshair;touch-action:none;display:block;border-radius:50%;}
-    /* PANEL */
     #panel{flex:1;overflow-y:auto;overflow-x:hidden;}
     #panel::-webkit-scrollbar{width:3px;}
     #panel::-webkit-scrollbar-thumb{background:var(--gf);}
-    .no-sig{height:100%;display:flex;flex-direction:column;align-items:center;
-      justify-content:center;font-size:12px;font-weight:bold;letter-spacing:4px;
-      gap:14px;text-align:center;padding:20px;color:var(--gm);}
-    #finfo{padding:4px 12px 14px;}
+
+    /* MAP MODE */
+    #map-container{display:none;flex:1;flex-direction:column;position:relative;}
+    #leaflet-map{flex:1;background:var(--bg);}
+    .leaflet-tile-pane{filter:hue-rotate(105deg) saturate(4) brightness(0.48) contrast(1.2);}
+    .leaflet-container{background:var(--bg) !important;}
+    .leaflet-control-zoom a{background:#0a1a0a !important;color:var(--g) !important;border-color:var(--gf) !important;}
+    .leaflet-control-attribution{background:rgba(0,0,0,.6) !important;color:rgba(0,255,70,.35) !important;font-size:7px !important;}
+    /* Marker utente */
+    .user-map-dot{width:14px;height:14px;background:var(--g);border-radius:50%;
+      box-shadow:0 0 12px var(--g),0 0 4px var(--g);border:2px solid rgba(0,0,0,.6);}
+    /* Blip aerei sulla mappa */
+    .ac-map-blip{border-radius:50%;border:1.5px solid var(--g);background:rgba(0,255,70,.6);
+      display:flex;align-items:center;justify-content:center;
+      font-size:9px;font-weight:bold;color:#000;cursor:pointer;font-family:var(--f);}
+    .ac-map-blip.sel{background:var(--g);box-shadow:0 0 10px var(--g);}
+    /* Mini info strip nella mappa */
+    #map-strip{flex-shrink:0;border-top:1px solid var(--gf);padding:7px 12px;
+      background:rgba(3,10,3,.92);display:none;}
+    .ms-cs{font-size:20px;font-weight:bold;letter-spacing:3px;text-shadow:0 0 10px var(--g);}
+    .ms-sub{font-size:11px;font-weight:bold;color:var(--gm);letter-spacing:1px;margin-top:2px;}
+    .ms-row{display:flex;gap:16px;margin-top:6px;font-size:11px;font-weight:bold;flex-wrap:wrap;}
+    .ms-item{display:flex;flex-direction:column;gap:2px;}
+    .ms-v{color:#fff;font-size:13px;font-weight:bold;}
+    .ms-l{font-size:8px;color:var(--gm);letter-spacing:2px;}
+    .ms-route{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:12px;font-weight:bold;}
+    .ms-ap{display:flex;align-items:center;gap:4px;}
+
     /* PANEL ELEMENTS */
-    .nav-hint{text-align:center;font-size:10px;font-weight:bold;color:var(--gm);
-      letter-spacing:3px;margin-bottom:8px;padding-top:2px;}
-    .cs{font-size:clamp(30px,9vw,48px);font-weight:bold;letter-spacing:5px;
-      text-align:center;text-shadow:0 0 20px var(--g),0 0 50px rgba(0,255,70,.25);line-height:1.1;}
-    .aname{text-align:center;font-size:13px;font-weight:bold;color:#fff;
-      letter-spacing:2px;margin-top:4px;}
-    .atag{text-align:center;font-size:12px;font-weight:bold;color:var(--gm);
-      letter-spacing:2px;margin-top:2px;margin-bottom:10px;}
-    /* AIRCRAFT SPECS */
-    .acspecs{border:1px solid var(--gf);margin-bottom:9px;background:rgba(0,255,70,.025);}
+    .no-sig{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;
+      font-size:12px;font-weight:bold;letter-spacing:4px;gap:14px;text-align:center;padding:20px;color:var(--gm);}
+    #finfo{padding:4px 12px 14px;}
+    .nav-hint{text-align:center;font-size:10px;font-weight:bold;color:var(--gm);letter-spacing:3px;margin-bottom:8px;padding-top:2px;}
+    .cs{font-size:clamp(30px,9vw,48px);font-weight:bold;letter-spacing:5px;text-align:center;
+      text-shadow:0 0 20px var(--g),0 0 50px rgba(0,255,70,.2);line-height:1.1;}
+    .aname{text-align:center;font-size:13px;font-weight:bold;color:#fff;letter-spacing:2px;margin-top:4px;}
+    .atag{text-align:center;font-size:12px;font-weight:bold;color:var(--gm);letter-spacing:2px;margin-top:2px;margin-bottom:10px;}
+    /* SPECS */
+    .acspecs{border:1px solid var(--gf);margin-bottom:9px;background:rgba(0,255,70,.02);}
     .acrow{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--gf);}
     .acrow:last-child{border-bottom:none;}
     .acfield{padding:7px 10px;}
     .acfield:first-child{border-right:1px solid var(--gf);}
     .acfl{font-size:8px;font-weight:bold;color:var(--gm);letter-spacing:3px;margin-bottom:4px;}
     .acfv{font-size:clamp(13px,3.8vw,16px);font-weight:bold;color:#fff;}
-    /* ROUTE */
-    .route{display:flex;align-items:stretch;gap:0;border:1px solid var(--gf);
-      margin-bottom:9px;background:rgba(0,255,70,.02);}
-    .ap{flex:1;padding:9px 10px;}
-    .ap-flag{font-size:20px;line-height:1;margin-bottom:3px;}
-    .ap-code{font-size:clamp(20px,6vw,28px);font-weight:bold;letter-spacing:3px;color:#fff;line-height:1;}
-    .ap-city{font-size:11px;font-weight:bold;color:var(--g);margin-top:3px;letter-spacing:1px;}
-    .ap-name{font-size:9px;font-weight:bold;color:var(--gm);margin-top:2px;letter-spacing:.5px;
-      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+    /* ROUTE — fix layout taglio a destra */
+    .route{display:flex;align-items:stretch;border:1px solid var(--gf);margin-bottom:9px;background:rgba(0,255,70,.02);overflow:hidden;}
+    .ap{flex:1;min-width:0;padding:9px 8px;}
+    .ap-flag{height:15px;margin-bottom:3px;display:flex;align-items:center;}
+    .ap-flag img{height:14px;display:block;}
+    .ap-code{font-size:clamp(18px,5.5vw,26px);font-weight:bold;letter-spacing:2px;color:#fff;line-height:1;}
+    .ap-city{font-size:11px;font-weight:bold;color:var(--g);margin-top:3px;letter-spacing:.5px;}
+    .ap-name{font-size:8px;font-weight:bold;color:var(--gm);margin-top:2px;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
     .ap-lbl{font-size:8px;font-weight:bold;color:var(--gm);letter-spacing:3px;margin-top:4px;opacity:.7;}
-    .rarr{display:flex;align-items:center;justify-content:center;padding:0 6px;
-      font-size:22px;color:var(--gm);border-left:1px solid var(--gf);border-right:1px solid var(--gf);}
+    .rarr{display:flex;align-items:center;justify-content:center;padding:0 5px;
+      font-size:20px;color:var(--gm);border-left:1px solid var(--gf);border-right:1px solid var(--gf);flex-shrink:0;}
     /* STATS */
-    .sgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:8px;}
+    .sgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px;}
     .sbox{border:1px solid var(--gf);padding:8px 5px;text-align:center;background:rgba(0,255,70,.02);}
     .sv{font-size:clamp(15px,4.8vw,22px);font-weight:bold;color:#fff;line-height:1.1;}
     .sl{font-size:9px;font-weight:bold;color:var(--gm);letter-spacing:2px;margin-top:4px;}
-    /* PBAR */
-    .pbar{display:flex;justify-content:space-between;align-items:center;
-      border-top:1px solid var(--gf);padding-top:8px;
-      font-size:10px;font-weight:bold;color:var(--g);letter-spacing:2px;flex-wrap:wrap;gap:4px;}
+    .pbar{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--gf);
+      padding-top:8px;font-size:10px;font-weight:bold;color:var(--g);letter-spacing:2px;flex-wrap:wrap;gap:4px;}
     /* SETTINGS */
-    #settings{display:flex;align-items:center;gap:10px;padding:6px 12px;
-      border-top:1px solid var(--gf);flex-shrink:0;}
+    #settings{display:flex;align-items:center;gap:10px;padding:6px 12px;border-top:1px solid var(--gf);flex-shrink:0;}
     #settings label{font-size:10px;font-weight:bold;color:var(--gm);letter-spacing:2px;flex-shrink:0;}
     #rslider{flex:1;-webkit-appearance:none;appearance:none;height:2px;background:var(--gf);outline:none;cursor:pointer;}
-    #rslider::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;
-      border-radius:50%;background:var(--g);cursor:pointer;box-shadow:0 0 8px var(--g);}
+    #rslider::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--g);cursor:pointer;box-shadow:0 0 8px var(--g);}
     #rval{min-width:48px;text-align:right;font-size:11px;font-weight:bold;color:var(--g);flex-shrink:0;}
   </style>
 </head>
@@ -99,15 +116,19 @@
 <div id="loading">
   <div class="spinner"></div>
   <div>ACQUISIZIONE SEGNALE GPS...</div>
-  <div style="font-size:9px;color:rgba(0,255,70,.4);letter-spacing:3px">SKYRADAR v2.1</div>
+  <div style="font-size:9px;color:rgba(0,255,70,.4);letter-spacing:3px">SKYRADAR v2.2</div>
 </div>
+
 <div id="app" style="display:none">
   <div id="header">
-    <div class="hlogo"><div class="dot"></div><span>SKYRADAR</span><span class="hver">v2.1</span></div>
+    <div class="hlogo"><div class="dot"></div><span>SKYRADAR</span><span class="hver">v2.2</span></div>
     <div id="hclock">--:--:--</div>
-    <button id="audiobtn" onclick="toggleAudio()" title="Audio on/off">&#128263;</button>
+    <button class="hbtn" id="viewbtn" onclick="toggleView()">MAPPA</button>
+    <button class="hbtn" id="audiobtn" onclick="toggleAudio()">&#128263;</button>
     <div id="hcount">0 IN ZONA</div>
   </div>
+
+  <!-- RADAR MODE -->
   <div id="radar-wrap"><canvas id="rc"></canvas></div>
   <div id="panel">
     <div class="no-sig" id="nosig">
@@ -117,6 +138,13 @@
     </div>
     <div id="finfo" style="display:none"></div>
   </div>
+
+  <!-- MAP MODE -->
+  <div id="map-container">
+    <div id="leaflet-map"></div>
+    <div id="map-strip"></div>
+  </div>
+
   <div id="settings">
     <label>RAGGIO</label>
     <input type="range" id="rslider" min="20" max="250" value="50" step="10">
@@ -124,12 +152,15 @@
   </div>
 </div>
 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-// SKYRADAR v2.1
+// SKYRADAR v2.2
 const S={
   lat:null,lon:null,radius:50,ac:[],selIdx:0,sweep:0,blips:[],
-  hexCache:{},routeCache:{},metaCache:{},lastUpd:null,timer:null,dpr:1
+  hexCache:{},routeCache:{},lastUpd:null,timer:null,dpr:1
 };
+let viewMode='radar';
+let map=null,mapMarkers={},userMapMarker=null,radiusCircle=null;
 
 // GEO
 function haversine(la1,lo1,la2,lo2){
@@ -140,19 +171,19 @@ function haversine(la1,lo1,la2,lo2){
 function bearingTo(la1,lo1,la2,lo2){
   const dLo=(lo2-lo1)*Math.PI/180;
   const y=Math.sin(dLo)*Math.cos(la2*Math.PI/180);
-  const x=Math.cos(la1*Math.PI/180)*Math.sin(la2*Math.PI/180)
-          -Math.sin(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.cos(dLo);
+  const x=Math.cos(la1*Math.PI/180)*Math.sin(la2*Math.PI/180)-Math.sin(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.cos(dLo);
   return(Math.atan2(y,x)*180/Math.PI+360)%360;
 }
-function hdgLabel(d){
-  return["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSO","SO","OSO","O","ONO","NO","NNO"][Math.round(d/22.5)%16];
-}
-function flag(iso){
+function hdgLabel(d){return["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSO","SO","OSO","O","ONO","NO","NNO"][Math.round(d/22.5)%16];}
+
+// BANDIERE — immagini flagcdn.com (funziona su tutti i browser incluso Windows desktop)
+function flagImg(iso,h){
   if(!iso||iso.length<2)return'';
-  return iso.toUpperCase().split('').map(c=>String.fromCodePoint(c.charCodeAt(0)-65+0x1F1E6)).join('');
+  h=h||14;
+  return`<img src="https://flagcdn.com/20x15/${iso.toLowerCase()}.png" style="height:${h}px;display:inline-block;vertical-align:middle;" alt="${iso}" onerror="this.style.display='none'">`;
 }
 
-// AIRLINES (fallback quando adsbdb non ha compagnia)
+// AIRLINES
 const AL={
   AZA:"ITA Airways",RYR:"Ryanair",EZY:"easyJet",VLG:"Vueling",IBE:"Iberia",
   BAW:"British Airways",DLH:"Lufthansa",AFR:"Air France",KLM:"KLM",THY:"Turkish Airlines",
@@ -183,7 +214,7 @@ function airlineName(cs,own,adsbAl){
   return AL[c.substring(0,3).toUpperCase()]||AL[c.substring(0,2).toUpperCase()]||'';
 }
 
-// MANUFACTURER + MODEL from Type string
+// MANUFACTURER
 const MFRS=[
   ['AIRBUS HELICOPTERS','Airbus Helicopters'],['AIRBUS','Airbus'],
   ['BOEING','Boeing'],['EMBRAER','Embraer'],['BOMBARDIER','Bombardier'],
@@ -193,27 +224,45 @@ const MFRS=[
   ['SIKORSKY','Sikorsky'],['LEONARDO','Leonardo'],['BELL','Bell'],
   ['EUROCOPTER','Airbus Helicopters'],['MCDONNELL DOUGLAS','Boeing'],
   ['FOKKER','Fokker'],['ILYUSHIN','Ilyushin'],['ANTONOV','Antonov'],
-  ['SAAB','SAAB'],['DE HAVILLAND','De Havilland'],['DORNIER','Dornier'],
-  ['TEXTRON','Cessna'],['LEARJET','Bombardier Learjet'],['MITSUBISHI','Mitsubishi'],
-  ['HONDA','Honda Aircraft'],['BRITISH AEROSPACE','BAe']
+  ['SAAB','SAAB'],['DE HAVILLAND','De Havilland'],['LEARJET','Bombardier Learjet'],
+  ['TEXTRON','Cessna'],['MITSUBISHI','Mitsubishi'],['HONDA','Honda Aircraft'],
+  ['BRITISH AEROSPACE','BAe']
 ];
-function parseMfr(typeStr){
-  if(!typeStr)return null;
-  const t=typeStr.toUpperCase().trim();
-  for(const[k,n]of MFRS)if(t.startsWith(k))return n;
+function parseMfr(t){
+  if(!t)return null;
+  const u=t.toUpperCase().trim();
+  for(const[k,n]of MFRS)if(u.startsWith(k))return n;
   return null;
 }
-function parseModel(typeStr,mfr){
-  if(!typeStr)return null;
-  if(!mfr)return typeStr.trim();
-  let s=typeStr.trim();
-  for(const[k]of MFRS){
-    if(s.toUpperCase().startsWith(k)){s=s.substring(k.length).trim();break;}
-  }
-  return s||typeStr.trim();
+function parseModel(t,mfr){
+  if(!t)return null;
+  if(!mfr)return t.trim();
+  let s=t.trim();
+  for(const[k]of MFRS){if(s.toUpperCase().startsWith(k)){s=s.substring(k.length).trim();break;}}
+  return s||t.trim();
+}
+function mfrFromCode(c){
+  if(!c)return null;
+  const u=c.toUpperCase();
+  if(/^A[023]/.test(u))return'Airbus';
+  if(/^B[37]/.test(u)||/^B[0-9]/.test(u))return'Boeing';
+  if(/^E[179]/.test(u)||u.startsWith('ERJ'))return'Embraer';
+  if(/^CRJ/.test(u))return'Bombardier';
+  if(/^AT[0-9]/.test(u))return'ATR';
+  if(/^DH/.test(u))return'De Havilland';
+  if(/^GL/.test(u))return'Gulfstream';
+  if(/^LJ/.test(u))return'Bombardier Learjet';
+  if(/^C[256]/.test(u))return'Cessna';
+  if(/^PC/.test(u))return'Pilatus';
+  if(/^EC[0-9]/.test(u))return'Airbus Helicopters';
+  if(/^(S76|S92)/.test(u))return'Sikorsky';
+  if(/^B0/.test(u))return'Bell';
+  if(/^MD/.test(u))return'Boeing';
+  if(/^F[57]/.test(u))return'Fokker';
+  return null;
 }
 
-// PASSENGER CAPACITY by ICAO type
+// CAPACITY
 const CAP={
   A318:107,A319:124,A320:150,A321:180,A20N:165,A21N:194,
   A332:253,A333:277,A338:257,A339:287,A343:295,A345:313,A346:360,
@@ -222,18 +271,16 @@ const CAP={
   B738:162,B739:178,B37M:162,B38M:178,B39M:193,B3XM:204,
   B741:452,B742:452,B743:496,B744:416,B748:467,
   B752:200,B753:243,B762:218,B763:261,B764:304,
-  B772:305,B773:368,B77L:317,B77W:396,
-  B788:242,B789:296,B78X:330,
+  B772:305,B773:368,B77L:317,B77W:396,B788:242,B789:296,B78X:330,
   E170:72,E175:82,E190:100,E195:120,E75L:82,E75S:76,E290:114,E295:146,
   CRJ1:50,CRJ2:50,CRJ7:70,CRJ9:90,CRJX:100,
   AT43:48,AT44:48,AT45:50,AT46:68,AT72:70,AT73:70,AT75:70,AT76:78,
   DH8A:37,DH8B:39,DH8C:50,DH8D:78,
-  SF34:34,SH36:36,JS41:29,F50:50,F70:80,F100:107,
-  MD11:293,MD82:155,MD83:155,MD88:142,MD90:153,
-  DC86:259,DC87:259,DC10:250
+  SF34:34,F50:50,F70:80,F100:107,
+  MD11:293,MD82:155,MD83:155,MD88:142,MD90:153
 };
 
-// AUDIO
+// AUDIO — solo aereo selezionato, parte a 100km, step ogni 10km
 let audioCtx=null,audioOn=false,beepTimer=null;
 function initAudio(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();}
 function doBeep(){
@@ -246,10 +293,9 @@ function doBeep(){
   g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.08);
   o.start(audioCtx.currentTime);o.stop(audioCtx.currentTime+0.09);
 }
-function beepInterval(distKm){
-  // >100km: no beep. 100km=3000ms, ogni 10km -270ms, min 300ms
-  if(distKm>100)return null;
-  const step=Math.floor(Math.min(100,Math.max(0,distKm))/10);
+function beepMs(dist){
+  if(dist>100)return null;
+  const step=Math.floor(Math.min(100,Math.max(0,dist))/10);
   return 300+step*270;
 }
 function scheduleBeep(){
@@ -257,7 +303,7 @@ function scheduleBeep(){
   const ac=S.ac[S.selIdx];
   if(!ac||S.lat===null){beepTimer=setTimeout(scheduleBeep,2000);return;}
   const dist=haversine(S.lat,S.lon,ac.lat||S.lat,ac.lon||S.lon);
-  const iv=beepInterval(dist);
+  const iv=beepMs(dist);
   if(iv===null){beepTimer=setTimeout(scheduleBeep,1500);return;}
   doBeep();
   beepTimer=setTimeout(scheduleBeep,iv);
@@ -270,7 +316,131 @@ function toggleAudio(){
   else clearTimeout(beepTimer);
 }
 
-// CANVAS
+// ── MAPPA LEAFLET ──────────────────────────────────
+function zoomForRadius(km){
+  if(km<=20)return 11;if(km<=30)return 10;if(km<=50)return 9;
+  if(km<=80)return 8;if(km<=130)return 7;if(km<=200)return 6;return 6;
+}
+
+function initMap(){
+  if(map)return;
+  map=L.map('leaflet-map',{zoomControl:true,attributionControl:true});
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+    attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
+    subdomains:'abcd',maxZoom:19
+  }).addTo(map);
+  if(S.lat!==null)map.setView([S.lat,S.lon],zoomForRadius(S.radius));
+}
+
+function updateMapView(){
+  if(!map||viewMode!=='map'||S.lat===null)return;
+
+  // Centro e raggio
+  if(!userMapMarker){
+    const icon=L.divIcon({html:'<div class="user-map-dot"></div>',className:'',iconSize:[14,14],iconAnchor:[7,7]});
+    userMapMarker=L.marker([S.lat,S.lon],{icon,zIndexOffset:1000}).addTo(map);
+  }else{
+    userMapMarker.setLatLng([S.lat,S.lon]);
+  }
+  if(radiusCircle)radiusCircle.remove();
+  radiusCircle=L.circle([S.lat,S.lon],{
+    radius:S.radius*1000,color:'#00ff46',weight:1.2,opacity:.35,
+    fillColor:'#00ff46',fillOpacity:.025
+  }).addTo(map);
+
+  // Aerei
+  const active=new Set();
+  S.ac.forEach((ac,idx)=>{
+    if(!ac.lat||!ac.lon)return;
+    const dist=haversine(S.lat,S.lon,ac.lat,ac.lon);
+    if(dist>S.radius)return;
+    const hex=ac.hex||('_'+idx);
+    const sel=idx===S.selIdx;
+    active.add(hex);
+    const sz=sel?22:14;
+    const icon=L.divIcon({
+      html:`<div class="ac-map-blip${sel?' sel':''}" style="width:${sz}px;height:${sz}px;font-size:${sel?10:8}px">${idx+1}</div>`,
+      className:'',iconSize:[sz,sz],iconAnchor:[sz/2,sz/2]
+    });
+    if(mapMarkers[hex]){
+      mapMarkers[hex].setLatLng([ac.lat,ac.lon]);
+      mapMarkers[hex].setIcon(icon);
+    }else{
+      const m=L.marker([ac.lat,ac.lon],{icon}).addTo(map);
+      m.on('click',()=>{S.selIdx=idx;renderPanel(S.ac[idx]);updateMapView();updateMapStrip();});
+      mapMarkers[hex]=m;
+    }
+  });
+  Object.keys(mapMarkers).forEach(hex=>{
+    if(!active.has(hex)){mapMarkers[hex].remove();delete mapMarkers[hex];}
+  });
+
+  updateMapStrip();
+}
+
+function updateMapStrip(){
+  const strip=document.getElementById('map-strip');
+  const ac=S.ac[S.selIdx];
+  if(!ac){strip.style.display='none';return;}
+  strip.style.display='';
+
+  const hx=S.hexCache[ac.hex]||{};
+  const cs=(ac.flight||'').trim()||ac.hex||'—';
+  const csKey=cs.replace(/\s/g,'');
+  const rt=S.routeCache[csKey]||{};
+  const aln=airlineName(cs,hx.op,rt.airline);
+  const dist=S.lat?Math.round(haversine(S.lat,S.lon,ac.lat,ac.lon)):'—';
+  const altFt=ac.alt_baro??ac.alt_geom;
+  const spd=ac.gs!=null?Math.round(ac.gs*1.852):null;
+  const trk=ac.track!=null?Math.round(ac.track):null;
+  const dep=rt.origin;const arr=rt.dest;
+
+  let routeHtml='';
+  if(dep||arr){
+    const df=dep?flagImg(dep.country,12):'';
+    const af=arr?flagImg(arr.country,12):'';
+    const dc=dep?(dep.iata||dep.icao||'—'):'—';
+    const ac2=arr?(arr.iata||arr.icao||'—'):'—';
+    const dct=dep&&dep.city?dep.city:'';
+    const act=arr&&arr.city?arr.city:'';
+    routeHtml=`<div class="ms-route">
+      <div class="ms-ap">${df}<strong>${dc}</strong>${dct?` <span style="color:var(--gm);font-size:10px">${dct}</span>`:''}</div>
+      <span style="opacity:.4">&#10230;</span>
+      <div class="ms-ap">${af}<strong>${ac2}</strong>${act?` <span style="color:var(--gm);font-size:10px">${act}</span>`:''}</div>
+    </div>`;
+  }
+
+  strip.innerHTML=`
+    <div class="ms-cs">${cs}</div>
+    ${aln?`<div class="ms-sub">${aln}</div>`:''}
+    ${routeHtml}
+    <div class="ms-row">
+      <div class="ms-item"><div class="ms-v">${dist} km</div><div class="ms-l">DISTANZA</div></div>
+      ${altFt!=null?`<div class="ms-item"><div class="ms-v">${Math.round(altFt).toLocaleString('it-IT')} ft</div><div class="ms-l">QUOTA</div></div>`:''}
+      ${spd!=null?`<div class="ms-item"><div class="ms-v">${spd} km/h</div><div class="ms-l">VELOCIT&Agrave;</div></div>`:''}
+      ${trk!=null?`<div class="ms-item"><div class="ms-v">${trk}&deg; ${hdgLabel(trk)}</div><div class="ms-l">ROTTA</div></div>`:''}
+    </div>`;
+}
+
+function toggleView(){
+  viewMode=viewMode==='radar'?'map':'radar';
+  const rw=document.getElementById('radar-wrap');
+  const pn=document.getElementById('panel');
+  const mc=document.getElementById('map-container');
+  const btn=document.getElementById('viewbtn');
+  if(viewMode==='map'){
+    rw.style.display='none';pn.style.display='none';mc.style.display='flex';mc.style.flexDirection='column';
+    btn.textContent='RADAR';
+    initMap();
+    if(S.lat!==null&&map){map.setView([S.lat,S.lon],zoomForRadius(S.radius));updateMapView();}
+    setTimeout(()=>map&&map.invalidateSize(),150);
+  }else{
+    rw.style.display='';pn.style.display='';mc.style.display='none';
+    btn.textContent='MAPPA';
+  }
+}
+
+// ── CANVAS RADAR ──────────────────────────────────
 const canvas=document.getElementById('rc');
 const ctx=canvas.getContext('2d');
 let rafId=null,CX,CY,RPX,SZcss;
@@ -283,37 +453,29 @@ function setupCanvas(){
   S.dpr=Math.min(window.devicePixelRatio||1,3);
   canvas.width=Math.round(SZcss*S.dpr);
   canvas.height=Math.round(SZcss*S.dpr);
-  canvas.style.width=SZcss+'px';
-  canvas.style.height=SZcss+'px';
-  ctx.setTransform(1,0,0,1,0,0);
-  ctx.scale(S.dpr,S.dpr);
+  canvas.style.width=SZcss+'px';canvas.style.height=SZcss+'px';
+  ctx.setTransform(1,0,0,1,0,0);ctx.scale(S.dpr,S.dpr);
   CX=SZcss/2;CY=SZcss/2;RPX=SZcss/2-8;
 }
 
 function drawRadar(){
   const SZ=SZcss;
   ctx.clearRect(0,0,SZ,SZ);
-
-  // sfondo
   const bg=ctx.createRadialGradient(CX,CY,0,CX,CY,RPX);
   bg.addColorStop(0,'#112211');bg.addColorStop(0.6,'#081408');bg.addColorStop(1,'#030a03');
   ctx.beginPath();ctx.arc(CX,CY,RPX,0,Math.PI*2);ctx.fillStyle=bg;ctx.fill();
 
-  // cerchi distanza
   [.25,.5,.75,1].forEach((f,i)=>{
     ctx.beginPath();ctx.arc(CX,CY,RPX*f,0,Math.PI*2);
-    ctx.strokeStyle=`rgba(0,255,70,${i===3?.35:.12})`;
-    ctx.lineWidth=i===3?1.5:1;ctx.stroke();
+    ctx.strokeStyle=`rgba(0,255,70,${i===3?.35:.12})`;ctx.lineWidth=i===3?1.5:1;ctx.stroke();
     if(i<3){
       const d=Math.round(S.radius*f),fs=Math.max(9,SZ/46);
       const ang=-Math.PI/4;
-      ctx.fillStyle='rgba(0,255,70,.4)';
-      ctx.font=`bold ${fs}px 'Courier New'`;ctx.textAlign='left';
+      ctx.fillStyle='rgba(0,255,70,.4)';ctx.font=`bold ${fs}px 'Courier New'`;ctx.textAlign='left';
       ctx.fillText(d+'km',CX+RPX*f*Math.cos(ang)+1,CY+RPX*f*Math.sin(ang)-2);
     }
   });
 
-  // assi e cardinali
   ctx.strokeStyle='rgba(0,255,70,.1)';ctx.lineWidth=1;
   ctx.beginPath();ctx.moveTo(CX,CY-RPX);ctx.lineTo(CX,CY+RPX);ctx.stroke();
   ctx.beginPath();ctx.moveTo(CX-RPX,CY);ctx.lineTo(CX+RPX,CY);ctx.stroke();
@@ -323,11 +485,9 @@ function drawRadar(){
   ctx.fillText('N',CX,CY-RPX+fc+1);ctx.fillText('S',CX,CY+RPX-3);
   ctx.textAlign='left';ctx.fillText('E',CX+RPX-fc-2,CY+5);ctx.fillText('O',CX-RPX+4,CY+5);
 
-  // sweep
   ctx.save();ctx.translate(CX,CY);ctx.rotate(S.sweep);
   for(let i=10;i>=0;i--){
-    ctx.beginPath();ctx.moveTo(0,0);
-    ctx.arc(0,0,RPX,0,-0.55*i/10,false);ctx.closePath();
+    ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,RPX,0,-0.55*i/10,false);ctx.closePath();
     ctx.fillStyle=`rgba(0,255,70,${0.004*(10-i)})`;ctx.fill();
   }
   ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(RPX,0);
@@ -337,7 +497,6 @@ function drawRadar(){
   ctx.restore();
   S.sweep+=0.02;
 
-  // blips
   S.blips=[];
   if(S.lat!==null){
     S.ac.forEach((ac,idx)=>{
@@ -349,33 +508,23 @@ function drawRadar(){
       const bx=CX+Math.sin(bear*Math.PI/180)*scale;
       const by=CY-Math.cos(bear*Math.PI/180)*scale;
       const sel=idx===S.selIdx;
-
-      if(sel){
-        [18,11].forEach(r=>{
-          ctx.beginPath();ctx.arc(bx,by,r,0,Math.PI*2);
-          ctx.strokeStyle=`rgba(0,255,70,${r===18?.12:.3})`;ctx.lineWidth=1;ctx.stroke();
-        });
-      }
+      if(sel){[18,11].forEach(r=>{ctx.beginPath();ctx.arc(bx,by,r,0,Math.PI*2);ctx.strokeStyle=`rgba(0,255,70,${r===18?.12:.3})`;ctx.lineWidth=1;ctx.stroke();});}
       const bR=sel?7:4.5;
       ctx.beginPath();ctx.arc(bx,by,bR,0,Math.PI*2);
       ctx.fillStyle=sel?'#00ff46':'rgba(0,255,70,.65)';
       if(sel){ctx.shadowColor='#00ff46';ctx.shadowBlur=12;}
       ctx.fill();ctx.shadowBlur=0;
-
       if(ac.track!=null){
         const aLen=sel?18:11,aRad=ac.track*Math.PI/180;
         const ax=bx+Math.sin(aRad)*aLen,ay=by-Math.cos(aRad)*aLen;
         ctx.beginPath();ctx.moveTo(bx,by);ctx.lineTo(ax,ay);
-        ctx.strokeStyle=sel?'rgba(0,255,70,.95)':'rgba(0,255,70,.4)';
-        ctx.lineWidth=sel?2:1.1;ctx.stroke();
+        ctx.strokeStyle=sel?'rgba(0,255,70,.95)':'rgba(0,255,70,.4)';ctx.lineWidth=sel?2:1.1;ctx.stroke();
         const p=5,pa=0.44;
         ctx.beginPath();ctx.moveTo(ax,ay);
         ctx.lineTo(ax-Math.sin(aRad-pa)*p,ay+Math.cos(aRad-pa)*p);
         ctx.lineTo(ax-Math.sin(aRad+pa)*p,ay+Math.cos(aRad+pa)*p);
-        ctx.closePath();
-        ctx.fillStyle=sel?'rgba(0,255,70,.95)':'rgba(0,255,70,.4)';ctx.fill();
+        ctx.closePath();ctx.fillStyle=sel?'rgba(0,255,70,.95)':'rgba(0,255,70,.4)';ctx.fill();
       }
-
       const fn=Math.max(10,SZ/38);
       ctx.fillStyle=sel?'#00ff46':'rgba(0,255,70,.85)';
       ctx.font=`bold ${fn}px 'Courier New'`;ctx.textAlign='left';
@@ -384,16 +533,13 @@ function drawRadar(){
     });
   }
 
-  // centro utente
   ctx.beginPath();ctx.arc(CX,CY,5,0,Math.PI*2);
   ctx.fillStyle='#00ff46';ctx.shadowColor='#00ff46';ctx.shadowBlur=14;ctx.fill();ctx.shadowBlur=0;
-  ctx.beginPath();ctx.arc(CX,CY,12,0,Math.PI*2);
-  ctx.strokeStyle='rgba(0,255,70,.3)';ctx.lineWidth=1;ctx.stroke();
+  ctx.beginPath();ctx.arc(CX,CY,12,0,Math.PI*2);ctx.strokeStyle='rgba(0,255,70,.3)';ctx.lineWidth=1;ctx.stroke();
   ctx.strokeStyle='rgba(0,0,0,.9)';ctx.lineWidth=2;
   ctx.beginPath();ctx.moveTo(CX-4,CY);ctx.lineTo(CX+4,CY);ctx.stroke();
   ctx.beginPath();ctx.moveTo(CX,CY-4);ctx.lineTo(CX,CY+4);ctx.stroke();
-  ctx.beginPath();ctx.arc(CX,CY,RPX,0,Math.PI*2);
-  ctx.strokeStyle='rgba(0,255,70,.35)';ctx.lineWidth=2;ctx.stroke();
+  ctx.beginPath();ctx.arc(CX,CY,RPX,0,Math.PI*2);ctx.strokeStyle='rgba(0,255,70,.35)';ctx.lineWidth=2;ctx.stroke();
 
   rafId=requestAnimationFrame(drawRadar);
 }
@@ -411,15 +557,12 @@ function onTap(e){
 canvas.addEventListener('click',onTap);
 canvas.addEventListener('touchstart',onTap,{passive:false});
 
-// FETCH MAIN
+// ── FETCH ─────────────────────────────────────────
 async function fetchAC(){
   if(S.lat===null)return;
   const nm=Math.max(11,Math.ceil(S.radius/1.852));
   try{
-    const r=await fetch(
-      `https://api.airplanes.live/v2/point/${S.lat}/${S.lon}/${nm}`,
-      {signal:AbortSignal.timeout(8000)}
-    );
+    const r=await fetch(`https://api.airplanes.live/v2/point/${S.lat}/${S.lon}/${nm}`,{signal:AbortSignal.timeout(8000)});
     if(!r.ok)return;
     const data=await r.json();
     let ac=(data.ac||[]).filter(a=>a.lat&&a.lon);
@@ -438,13 +581,13 @@ async function fetchAC(){
       ac.slice(0,10).forEach(a=>{
         if(a.hex)fetchHex(a.hex);
         const cs=(a.flight||'').trim().replace(/\s/g,'');
-        if(cs)fetchRoute(cs,a.hex);
+        if(cs)fetchRoute(cs);
       });
     }
+    if(viewMode==='map')updateMapView();
   }catch(e){console.warn('fetchAC:',e.message);}
 }
 
-// hexdb: tipo, registrazione, operatore
 async function fetchHex(hex){
   if(S.hexCache[hex]!==undefined)return;
   S.hexCache[hex]=null;
@@ -452,73 +595,51 @@ async function fetchHex(hex){
     const r=await fetch(`https://hexdb.io/api/v1/aircraft/${hex}`,{signal:AbortSignal.timeout(5000)});
     if(!r.ok)return;
     const d=await r.json();
-    const fullType=d.Type||d.type||'';
-    S.hexCache[hex]={
-      type:d.ICAOTypeCode||d.type||null,
-      fullType:fullType,
-      op:d.RegisteredOwners||d.Operator||null,
-      reg:d.Registration||null,
-      year:d.YearBuilt||d.yearBuilt||null,
-      mfr:parseMfr(fullType),
-      model:parseModel(fullType,parseMfr(fullType)),
-    };
-    if(S.ac[S.selIdx]?.hex===hex)renderPanel(S.ac[S.selIdx]);
+    const ft=d.Type||d.type||'';
+    const mfr=parseMfr(ft);
+    S.hexCache[hex]={type:d.ICAOTypeCode||null,fullType:ft,op:d.RegisteredOwners||d.Operator||null,
+      reg:d.Registration||null,year:d.YearBuilt||d.yearBuilt||null,mfr,model:parseModel(ft,mfr)};
+    const sel=S.ac[S.selIdx];
+    if(sel?.hex===hex){renderPanel(sel);if(viewMode==='map')updateMapStrip();}
   }catch{}
 }
 
-// adsbdb: rotta (origine e destinazione)
-async function fetchRoute(callsign,hex){
-  const key=callsign;
-  if(S.routeCache[key]!==undefined)return;
-  S.routeCache[key]=null;
+async function fetchRoute(callsign){
+  if(S.routeCache[callsign]!==undefined)return;
+  S.routeCache[callsign]=null;
   try{
-    const r=await fetch(
-      `https://api.adsbdb.com/v0/callsign/${callsign}`,
-      {signal:AbortSignal.timeout(6000)}
-    );
+    const r=await fetch(`https://api.adsbdb.com/v0/callsign/${callsign}`,{signal:AbortSignal.timeout(6000)});
     if(!r.ok)return;
     const data=await r.json();
     const fr=data?.response?.flightroute;
     if(!fr)return;
-    S.routeCache[key]={
+    S.routeCache[callsign]={
       airline:fr.airline?.name||null,
-      origin:fr.origin?{
-        icao:fr.origin.icao_code,
-        iata:fr.origin.iata_code,
-        city:fr.origin.municipality,
-        name:fr.origin.name,
-        country:fr.origin.country_iso_name
-      }:null,
-      dest:fr.destination?{
-        icao:fr.destination.icao_code,
-        iata:fr.destination.iata_code,
-        city:fr.destination.municipality,
-        name:fr.destination.name,
-        country:fr.destination.country_iso_name
-      }:null,
+      origin:fr.origin?{icao:fr.origin.icao_code,iata:fr.origin.iata_code,
+        city:fr.origin.municipality,name:fr.origin.name,country:fr.origin.country_iso_name}:null,
+      dest:fr.destination?{icao:fr.destination.icao_code,iata:fr.destination.iata_code,
+        city:fr.destination.municipality,name:fr.destination.name,country:fr.destination.country_iso_name}:null
     };
-    const selAc=S.ac[S.selIdx];
-    const selCs=(selAc?.flight||'').trim().replace(/\s/g,'');
-    if(selCs===key)renderPanel(selAc);
+    const sel=S.ac[S.selIdx];
+    const selCs=(sel?.flight||'').trim().replace(/\s/g,'');
+    if(selCs===callsign){renderPanel(sel);if(viewMode==='map')updateMapStrip();}
   }catch{}
 }
 
-// RENDER PANEL
+// ── PANEL ─────────────────────────────────────────
 function renderPanel(ac){
   if(!ac)return;
   const hx=S.hexCache[ac.hex]||{};
   const cs=(ac.flight||'').trim()||ac.hex||'—';
   const csKey=cs.replace(/\s/g,'');
   const rt=S.routeCache[csKey]||{};
-
   const aln=airlineName(cs,hx.op,rt.airline);
   const typCode=(ac.t||hx.type||'').toUpperCase()||'—';
   const reg=hx.reg||'—';
   const mfr=hx.mfr||mfrFromCode(typCode);
   const model=hx.model||'—';
   const year=hx.year||'—';
-  const pax=CAP[typCode]?CAP[typCode]+'  pax':'—';
-
+  const pax=CAP[typCode]?CAP[typCode]+' pax':'—';
   const dist=S.lat?Math.round(haversine(S.lat,S.lon,ac.lat,ac.lon)):'—';
   const altFt=ac.alt_baro??ac.alt_geom;
   const altFtS=altFt!=null?Math.round(altFt).toLocaleString('it-IT'):'—';
@@ -537,19 +658,20 @@ function renderPanel(ac){
     else if(vr&&vr<-500)phase='DISCESA';
     else phase='CROCIERA';
   }
-
   const vrStr=vr!=null
     ?`<span style="color:${vr>80?'#00ff46':vr<-80?'#ff7040':'#aaffcc'}">${vr>80?'&#8593;':vr<-80?'&#8595;':'&#8594;'}${Math.abs(Math.round(vr))}</span>`
     :'—';
 
+  const depRaw=(ac.dep||'').toUpperCase().replace(/[^A-Z]/g,'');
+  const arrRaw=(ac.arr||'').toUpperCase().replace(/[^A-Z]/g,'');
+  const depInfo=rt.origin||(depRaw?{icao:depRaw,iata:depRaw.length===3?depRaw:null,city:'',name:'',country:''}:null);
+  const arrInfo=rt.dest||(arrRaw?{icao:arrRaw,iata:arrRaw.length===3?arrRaw:null,city:'',name:'',country:''}:null);
+
   function apBlock(info,lbl,align){
-    if(!info)return`<div class="ap" style="text-align:${align}">
-      <div class="ap-code" style="color:rgba(0,255,70,.35)">—</div>
-      <div class="ap-lbl">${lbl}</div></div>`;
-    const f=flag(info.country);
+    if(!info)return`<div class="ap" style="text-align:${align}"><div class="ap-code" style="color:rgba(0,255,70,.3)">—</div><div class="ap-lbl">${lbl}</div></div>`;
     const dispCode=info.iata||info.icao||'—';
     return`<div class="ap" style="text-align:${align}">
-      ${f?`<div class="ap-flag">${f}</div>`:''}
+      ${info.country?`<div class="ap-flag">${flagImg(info.country)}</div>`:''}
       <div class="ap-code">${dispCode}</div>
       ${info.city?`<div class="ap-city">${info.city}</div>`:''}
       ${info.name?`<div class="ap-name">${info.name}</div>`:''}
@@ -557,47 +679,26 @@ function renderPanel(ac){
     </div>`;
   }
 
-  // origine/destinazione: prima da adsbdb, poi da campi ADS-B diretti
-  const depRaw=(ac.dep||'').toUpperCase().replace(/[^A-Z]/g,'');
-  const arrRaw=(ac.arr||'').toUpperCase().replace(/[^A-Z]/g,'');
-  const depInfo=rt.origin||(depRaw?{icao:depRaw,iata:depRaw.length===3?depRaw:null,city:'',name:'',country:''}:null);
-  const arrInfo=rt.dest||(arrRaw?{icao:arrRaw,iata:arrRaw.length===3?arrRaw:null,city:'',name:'',country:''}:null);
-
   document.getElementById('finfo').innerHTML=`
     ${total>1?`<div class="nav-hint">&#9992; ${num}/${total} &nbsp;&middot;&nbsp; TAP SUL RADAR PER SELEZIONARE</div>`:''}
     <div class="cs">${cs}</div>
     ${aln?`<div class="aname">${aln}</div>`:''}
     <div class="atag">${typCode}${reg!=='—'?' &nbsp;&middot;&nbsp; '+reg:''}</div>
-
     <div class="acspecs">
       <div class="acrow">
-        <div class="acfield">
-          <div class="acfl">COSTRUTTORE</div>
-          <div class="acfv">${mfr||'—'}</div>
-        </div>
-        <div class="acfield">
-          <div class="acfl">MODELLO</div>
-          <div class="acfv">${model}</div>
-        </div>
+        <div class="acfield"><div class="acfl">COSTRUTTORE</div><div class="acfv">${mfr||'—'}</div></div>
+        <div class="acfield"><div class="acfl">MODELLO</div><div class="acfv">${model}</div></div>
       </div>
       <div class="acrow">
-        <div class="acfield">
-          <div class="acfl">ANNO COSTRUZIONE</div>
-          <div class="acfv">${year}</div>
-        </div>
-        <div class="acfield">
-          <div class="acfl">CAPACIT&Agrave; PAX</div>
-          <div class="acfv">${pax}</div>
-        </div>
+        <div class="acfield"><div class="acfl">ANNO COSTRUZIONE</div><div class="acfv">${year}</div></div>
+        <div class="acfield"><div class="acfl">CAPACIT&Agrave; PAX</div><div class="acfv">${pax}</div></div>
       </div>
     </div>
-
     <div class="route">
       ${apBlock(depInfo,'PARTENZA','left')}
       <div class="rarr">&#10230;</div>
       ${apBlock(arrInfo,'ARRIVO','right')}
     </div>
-
     <div class="sgrid">
       <div class="sbox"><div class="sv">${dist}</div><div class="sl">KM DA TE</div></div>
       <div class="sbox"><div class="sv">${altFtS}</div><div class="sl">PIEDI</div></div>
@@ -606,50 +707,27 @@ function renderPanel(ac){
       <div class="sbox"><div class="sv">${altM!=null?(altM/1000).toFixed(1)+'k':'—'}</div><div class="sl">METRI</div></div>
       <div class="sbox"><div class="sv">${vrStr}</div><div class="sl">FT/MIN</div></div>
     </div>
-
     <div class="pbar">
       <span>FASE: <strong>${phase}</strong></span>
       <span>${S.lastUpd?'&#10227; '+S.lastUpd:''}</span>
-    </div>
-  `;
+    </div>`;
 }
 
-// manufacturer da codice ICAO quando hexdb non ha full type
-function mfrFromCode(code){
-  if(!code)return null;
-  const u=code.toUpperCase();
-  if(/^A[0-9]/.test(u)||u.startsWith('A3')||u.startsWith('A2')||u.startsWith('A35')||u.startsWith('A38'))return'Airbus';
-  if(/^B[0-9]/.test(u)||u.startsWith('B73')||u.startsWith('B74')||u.startsWith('B75')||u.startsWith('B76')||u.startsWith('B77')||u.startsWith('B78')||u.startsWith('B3')||u.startsWith('B38'))return'Boeing';
-  if(/^E[179]/.test(u)||u.startsWith('ERJ'))return'Embraer';
-  if(/^CRJ/.test(u))return'Bombardier';
-  if(/^AT[0-9]/.test(u))return'ATR';
-  if(/^DH[0-9]/.test(u))return'De Havilland';
-  if(/^GL/.test(u))return'Gulfstream';
-  if(/^LJ/.test(u))return'Bombardier Learjet';
-  if(/^C[256][0-9]/.test(u))return'Cessna';
-  if(/^PC/.test(u))return'Pilatus';
-  if(/^EC[0-9]/.test(u))return'Airbus Helicopters';
-  if(/^(S76|S92)/.test(u))return'Sikorsky';
-  if(/^B0[0-9]/.test(u)||u.startsWith('B06'))return'Bell';
-  if(/^MD/.test(u))return'Boeing (ex McDonnell Douglas)';
-  if(/^F[57]0/.test(u)||u.startsWith('F100'))return'Fokker';
-  return null;
-}
-
-// SETTINGS
+// ── SETTINGS ──────────────────────────────────────
 document.getElementById('rslider').addEventListener('input',function(){
   S.radius=parseInt(this.value);
   document.getElementById('rval').textContent=S.radius+' KM';
   fetchAC();
+  if(map&&viewMode==='map'){map.setView([S.lat,S.lon],zoomForRadius(S.radius));updateMapView();}
 });
 
-// CLOCK
+// ── CLOCK ─────────────────────────────────────────
 setInterval(()=>{
   document.getElementById('hclock').textContent=
     new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
 },1000);
 
-// INIT
+// ── INIT ──────────────────────────────────────────
 function startApp(lat,lon){
   S.lat=lat;S.lon=lon;
   document.getElementById('loading').classList.add('hidden');
@@ -658,24 +736,24 @@ function startApp(lat,lon){
   if(rafId)cancelAnimationFrame(rafId);
   drawRadar();fetchAC();
   if(S.timer)clearInterval(S.timer);
-  S.timer=setInterval(fetchAC,10000);
+  S.timer=setInterval(fetchAC,5000); // aggiornamento ogni 5 secondi
 }
 
 navigator.geolocation.getCurrentPosition(
   p=>startApp(p.coords.latitude,p.coords.longitude),
-  ()=>{
-    document.getElementById('loading').innerHTML=
-      '<div style="font-size:26px;color:#ff4444">&#8855;</div>'+
-      '<div>GPS NON DISPONIBILE</div>'+
-      '<div style="font-size:9px;color:rgba(0,255,70,.5);letter-spacing:2px;margin-top:10px;text-align:center;max-width:260px">Controlla i permessi di geolocalizzazione</div>';
-  },
+  ()=>{document.getElementById('loading').innerHTML=
+    '<div style="font-size:26px;color:#ff4444">&#8855;</div><div>GPS NON DISPONIBILE</div>'+
+    '<div style="font-size:9px;color:rgba(0,255,70,.5);letter-spacing:2px;margin-top:10px;text-align:center;max-width:260px">Controlla i permessi di geolocalizzazione</div>';},
   {enableHighAccuracy:true,timeout:15000,maximumAge:30000}
 );
 navigator.geolocation.watchPosition(
-  p=>{S.lat=p.coords.latitude;S.lon=p.coords.longitude;},
+  p=>{S.lat=p.coords.latitude;S.lon=p.coords.longitude;if(userMapMarker)userMapMarker.setLatLng([p.coords.latitude,p.coords.longitude]);},
   ()=>{},{enableHighAccuracy:true}
 );
-window.addEventListener('resize',()=>{if(rafId)cancelAnimationFrame(rafId);setupCanvas();drawRadar();});
+window.addEventListener('resize',()=>{
+  if(viewMode==='radar'){if(rafId)cancelAnimationFrame(rafId);setupCanvas();drawRadar();}
+  else if(map)setTimeout(()=>map.invalidateSize(),100);
+});
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>
