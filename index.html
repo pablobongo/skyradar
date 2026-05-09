@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>SkyRadar</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <meta name="theme-color" content="#030a03">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="SkyRadar">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+    :root{--g:#00ff46;--gd:rgba(0,255,70,.55);--gf:rgba(0,255,70,.12);--bg:#030a03;--f:'Courier New','Lucida Console',monospace;}
+    html,body{height:100%;background:var(--bg);color:var(--g);font-family:var(--f);overflow:hidden;}
+    #loading{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;z-index:200;font-size:11px;letter-spacing:4px;}
+    #loading.hidden{display:none;}
+    .spinner{width:44px;height:44px;border:2px solid rgba(0,255,70,.15);border-top-color:var(--g);border-radius:50%;animation:spin 1s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    #app{display:flex;flex-direction:column;height:100vh;height:100dvh;}
+    #header{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;border-bottom:1px solid var(--gf);flex-shrink:0;font-size:11px;letter-spacing:3px;}
+    .hlogo{font-size:13px;font-weight:bold;display:flex;align-items:center;gap:6px;}
+    .dot{width:6px;height:6px;border-radius:50%;background:var(--g);animation:blink 2s infinite;}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+    #hclock{opacity:.55;font-size:12px;}
+    #hcount{opacity:.65;font-size:10px;}
+    #radar-wrap{display:flex;justify-content:center;align-items:center;flex-shrink:0;padding:8px 8px 4px;}
+    #rc{cursor:crosshair;touch-action:none;display:block;border-radius:50%;}
+    #panel{flex:1;overflow-y:auto;overflow-x:hidden;}
+    #panel::-webkit-scrollbar{width:3px;}
+    #panel::-webkit-scrollbar-thumb{background:var(--gf);}
+    .no-sig{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:.3;font-size:11px;letter-spacing:4px;gap:14px;text-align:center;padding:20px;}
+    #finfo{padding:6px 14px 14px;}
+    .nav-hint{text-align:center;font-size:9px;opacity:.35;letter-spacing:3px;margin-bottom:10px;padding-top:4px;}
+    .sil-wrap{display:flex;justify-content:center;align-items:center;margin:4px 0 8px;}
+    .cs{font-size:clamp(28px,8vw,44px);font-weight:bold;letter-spacing:5px;text-align:center;text-shadow:0 0 18px var(--g),0 0 40px rgba(0,255,70,.3);line-height:1.1;}
+    .aname{text-align:center;font-size:11px;opacity:.65;letter-spacing:3px;margin-top:3px;}
+    .atype{text-align:center;font-size:10px;opacity:.4;letter-spacing:2px;margin-top:2px;margin-bottom:10px;}
+    .route{display:flex;align-items:center;gap:8px;border:1px solid var(--gf);padding:10px 12px;margin-bottom:10px;background:rgba(0,255,70,.025);}
+    .ap{flex:1;}
+    .ap-code{font-size:clamp(16px,5vw,22px);font-weight:bold;letter-spacing:3px;}
+    .ap-lbl{font-size:9px;opacity:.35;letter-spacing:3px;margin-top:2px;}
+    .rarr{font-size:22px;opacity:.3;}
+    .sgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;}
+    .sbox{border:1px solid var(--gf);padding:8px 6px;text-align:center;background:rgba(0,255,70,.02);}
+    .sv{font-size:clamp(14px,4.5vw,20px);font-weight:bold;line-height:1.1;}
+    .sl{font-size:8px;opacity:.35;letter-spacing:2px;margin-top:4px;}
+    .pbar{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--gf);padding-top:8px;font-size:9px;opacity:.45;letter-spacing:2px;flex-wrap:wrap;gap:4px;}
+    #settings{display:flex;align-items:center;gap:10px;padding:7px 14px;border-top:1px solid var(--gf);flex-shrink:0;font-size:10px;letter-spacing:2px;}
+    #settings label{opacity:.4;flex-shrink:0;}
+    #rslider{flex:1;-webkit-appearance:none;appearance:none;height:2px;background:var(--gf);outline:none;cursor:pointer;}
+    #rslider::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--g);cursor:pointer;box-shadow:0 0 6px var(--g);}
+    #rval{min-width:44px;text-align:right;opacity:.7;flex-shrink:0;}
+  </style>
+</head>
+<body>
+<div id="loading">
+  <div class="spinner"></div>
+  <div>ACQUISIZIONE SEGNALE GPS...</div>
+  <div style="font-size:9px;opacity:.3;letter-spacing:3px">SKYRADAR v1.0</div>
+</div>
+<div id="app" style="display:none">
+  <div id="header">
+    <div class="hlogo"><div class="dot"></div><span>◈ SKYRADAR</span></div>
+    <div id="hclock">--:--:--</div>
+    <div id="hcount">0 IN ZONA</div>
+  </div>
+  <div id="radar-wrap"><canvas id="rc"></canvas></div>
+  <div id="panel">
+    <div class="no-sig" id="nosig">
+      <div style="font-size:28px">✈</div>
+      <div>NESSUN AEREO NEL RAGGIO</div>
+      <div style="font-size:9px;margin-top:4px">PROVA AD AUMENTARE IL RAGGIO</div>
+    </div>
+    <div id="finfo" style="display:none"></div>
+  </div>
+  <div id="settings">
+    <label>RAGGIO</label>
+    <input type="range" id="rslider" min="20" max="250" value="50" step="10">
+    <span id="rval">50 KM</span>
+  </div>
+</div>
+<script>
+const S={lat:null,lon:null,radius:50,ac:[],selIdx:0,sweep:0,blips:[],hexCache:{},lastUpd:null,timer:null};
+
+function haversine(la1,lo1,la2,lo2){
+  const R=6371,dLa=(la2-la1)*Math.PI/180,dLo=(lo2-lo1)*Math.PI/180;
+  const a=Math.sin(dLa/2)**2+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLo/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+function bearingTo(la1,lo1,la2,lo2){
+  const dLo=(lo2-lo1)*Math.PI/180;
+  const y=Math.sin(dLo)*Math.cos(la2*Math.PI/180);
+  const x=Math.cos(la1*Math.PI/180)*Math.sin(la2*Math.PI/180)-Math.sin(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.cos(dLo);
+  return(Math.atan2(y,x)*180/Math.PI+360)%360;
+}
+function hdgLabel(d){return["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSO","SO","OSO","O","ONO","NO","NNO"][Math.round(d/22.5)%16];}
+
+const AL={
+  "AZA":"ITA Airways","RYR":"Ryanair","EZY":"easyJet","VLG":"Vueling","IBE":"Iberia",
+  "BAW":"British Airways","DLH":"Lufthansa","AFR":"Air France","KLM":"KLM","THY":"Turkish Airlines",
+  "UAE":"Emirates","QTR":"Qatar Airways","ETD":"Etihad","SWR":"Swiss","AUA":"Austrian",
+  "TAP":"TAP Portugal","SAS":"SAS","NAX":"Norwegian","WZZ":"Wizz Air","TVS":"Transavia",
+  "AEE":"Aegean","VOE":"Volotea","EIN":"Aer Lingus","FIN":"Finnair","BEL":"Brussels Airlines",
+  "AAL":"American Airlines","UAL":"United Airlines","DAL":"Delta Air Lines","SWA":"Southwest",
+  "NOS":"Neos","BPA":"Blue Panorama","TOM":"TUI Airways","MSR":"EgyptAir","SVA":"Saudia",
+  "ELY":"El Al","RAM":"Royal Air Maroc","GFA":"Gulf Air","PGT":"Pegasus Airlines",
+  "ADR":"Adria Airways","EJU":"easyJet Europe","CSN":"China Southern","CCA":"Air China",
+  "AZ":"ITA Airways","FR":"Ryanair","U2":"easyJet","VY":"Vueling","IB":"Iberia",
+  "BA":"British Airways","LH":"Lufthansa","AF":"Air France","TK":"Turkish Airlines",
+  "EK":"Emirates","QR":"Qatar Airways","EY":"Etihad","LX":"Swiss","OS":"Austrian",
+  "TP":"TAP Portugal","SK":"SAS","DY":"Norwegian","W6":"Wizz Air","HV":"Transavia",
+  "A3":"Aegean","V7":"Volotea","EI":"Aer Lingus","AY":"Finnair","SN":"Brussels Airlines",
+  "AA":"American Airlines","UA":"United Airlines","DL":"Delta Air Lines","WN":"Southwest",
+  "NO":"Neos","PC":"Pegasus Airlines","MS":"EgyptAir","SV":"Saudia","LY":"El Al",
+  "AT":"Royal Air Maroc","GF":"Gulf Air","EN":"Air Dolomiti"
+};
+function airlineName(cs,own){
+  if(own&&own.trim()&&own!=='N/A')return own.trim();
+  if(!cs)return'—';
+  const c=cs.trim();
+  return AL[c.substring(0,3).toUpperCase()]||AL[c.substring(0,2).toUpperCase()]||'—';
+}
+
+function acCat(t){
+  if(!t)return'nb';
+  const u=t.toUpperCase();
+  if(/^(EC\d|B06|R44|AS3|H6|S76|S92|NH9|R22)/.test(u))return'heli';
+  if(/^A38/.test(u))return'a380';
+  if(/^(B74|B748)/.test(u))return'b747';
+  if(/^(A33|A34|A35|A36|B76|B77|B78|B79|DC10|MD11)/.test(u))return'wb';
+  if(/^(GL|LJ|PC12|CJ|C25|C56|BE4|CL6|E50|DA4|DA5|SR2)/.test(u))return'biz';
+  if(/^(C17|C13|A400|B52|F16|F35|F18|C5|KC|P3|P8|C27)/.test(u))return'mil';
+  return'nb';
+}
+
+/* SVG Silhouettes — orientate a destra, stile retrò anni 80, linee monochrome */
+const SIL={
+nb:`<svg viewBox="0 0 220 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M18 42 L165 42 Q182 42 192 37 L200 33 Q196 29 192 29 L165 30 L18 30 Q8 30 6 36 Q8 42 18 42Z" fill="rgba(0,255,70,.1)" stroke="#00ff46" stroke-width="1.1"/>
+  <path d="M192 29 Q205 31 208 35 Q205 38 192 37Z" fill="#00ff46" opacity=".5"/>
+  <rect x="184" y="30.5" width="5" height="3" rx="1" fill="#00ff46" opacity=".85"/>
+  <path d="M108 30 L62 5 L56 8 L92 30Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".9"/>
+  <path d="M108 42 L62 67 L56 64 L92 42Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".9"/>
+  <path d="M56 8 L50 2 L52 5Z" fill="#00ff46" opacity=".5"/>
+  <path d="M56 64 L50 70 L52 67Z" fill="#00ff46" opacity=".5"/>
+  <ellipse cx="80" cy="9" rx="10" ry="3.5" fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width=".9"/>
+  <ellipse cx="80" cy="63" rx="10" ry="3.5" fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width=".9"/>
+  <path d="M26 30 L10 16 L7 19 L20 30Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".8"/>
+  <path d="M26 42 L10 56 L7 53 L20 42Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".8"/>
+  <path d="M20 30 L13 10 L16 10 L26 30Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".8"/>
+</svg>`,
+wb:`<svg viewBox="0 0 220 95" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M16 46 L160 46 Q178 46 188 41 L196 36 Q192 31 188 31 L160 32 L16 32 Q6 32 4 39 Q6 46 16 46Z" fill="rgba(0,255,70,.09)" stroke="#00ff46" stroke-width="1.2"/>
+  <path d="M188 31 Q202 34 205 38 Q202 41 188 41Z" fill="#00ff46" opacity=".45"/>
+  <rect x="180" y="32" width="6" height="3.5" rx="1" fill="#00ff46" opacity=".8"/>
+  <path d="M106 32 L52 4 L44 7 L82 32Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".9"/>
+  <path d="M106 46 L52 74 L44 71 L82 46Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".9"/>
+  <path d="M44 7 L37 0 L40 4Z" fill="#00ff46" opacity=".5"/>
+  <path d="M44 71 L37 78 L40 74Z" fill="#00ff46" opacity=".5"/>
+  <ellipse cx="79" cy="9" rx="10" ry="3" fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width=".9"/>
+  <ellipse cx="62" cy="5" rx="9" ry="3" fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width=".9"/>
+  <ellipse cx="79" cy="69" rx="10" ry="3" fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width=".9"/>
+  <ellipse cx="62" cy="73" rx="9" ry="3" fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width=".9"/>
+  <path d="M24 32 L8 17 L5 20 L18 32Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".8"/>
+  <path d="M24 46 L8 61 L5 58 L18 46Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".8"/>
+  <path d="M17 32 L10 11 L14 11 L24 32Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".8"/>
+</svg>`,
+a380:`<svg viewBox="0 0 220 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M16 52 L158 52 Q175 52 184 47 L192 42 Q188 37 184 37 L158 38 L16 38 Q6 38 4 45 Q6 52 16 52Z" fill="rgba(0,255,70,.08)" stroke="#00ff46" stroke-width="1.2"/>
+  <path d="M60 38 L158 38 Q170 38 174 34 Q170 30 158 30 L60 30 Q52 30 50 34 Q52 38 60 38Z" fill="rgba(0,255,70,.06)" stroke="#00ff46" stroke-width=".9"/>
+  <path d="M184 37 Q199 40 202 44 Q199 47 184 47Z" fill="#00ff46" opacity=".42"/>
+  <rect x="176" y="38" width="6" height="3.5" rx="1" fill="#00ff46" opacity=".8"/>
+  <path d="M110 38 L48 4 L40 8 L80 38Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".9"/>
+  <path d="M110 52 L48 86 L40 82 L80 52Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".9"/>
+  <ellipse cx="80" cy="8" rx="11" ry="3.5" fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width=".9"/>
+  <ellipse cx="60" cy="3" rx="10" ry="3" fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width=".9"/>
+  <ellipse cx="80" cy="82" rx="11" ry="3.5" fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width=".9"/>
+  <ellipse cx="60" cy="87" rx="10" ry="3" fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width=".9"/>
+  <path d="M24 38 L9 25 L6 28 L18 38Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".8"/>
+  <path d="M24 52 L9 65 L6 62 L18 52Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".8"/>
+  <path d="M16 38 L10 16 L14 16 L24 38Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".8"/>
+</svg>`,
+b747:`<svg viewBox="0 0 220 92" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M16 46 L160 46 Q177 46 186 41 L194 37 Q190 32 186 32 L160 33 L16 33 Q6 33 4 39 Q6 46 16 46Z" fill="rgba(0,255,70,.09)" stroke="#00ff46" stroke-width="1.1"/>
+  <path d="M152 33 Q168 33 174 28 Q170 23 160 23 L148 23 Q140 23 140 28 Q142 33 152 33Z" fill="rgba(0,255,70,.07)" stroke="#00ff46" stroke-width=".9"/>
+  <path d="M186 32 Q200 35 202 38 Q200 41 186 41Z" fill="#00ff46" opacity=".45"/>
+  <rect x="178" y="33" width="6" height="3" rx="1" fill="#00ff46" opacity=".8"/>
+  <path d="M105 33 L50 5 L42 8 L80 33Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".9"/>
+  <path d="M105 46 L50 74 L42 71 L80 46Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".9"/>
+  <ellipse cx="78" cy="8" rx="10" ry="3.2" fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width=".9"/>
+  <ellipse cx="60" cy="4" rx="9" ry="3" fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width=".9"/>
+  <ellipse cx="78" cy="71" rx="10" ry="3.2" fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width=".9"/>
+  <ellipse cx="60" cy="75" rx="9" ry="3" fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width=".9"/>
+  <path d="M24 33 L8 18 L5 21 L18 33Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".8"/>
+  <path d="M24 46 L8 61 L5 58 L18 46Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".8"/>
+  <path d="M17 33 L10 12 L14 12 L24 33Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".8"/>
+</svg>`,
+heli:`<svg viewBox="0 0 220 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <line x1="85" y1="20" x2="165" y2="20" stroke="#00ff46" stroke-width="1.6"/>
+  <line x1="125" y1="8" x2="125" y2="32" stroke="#00ff46" stroke-width="1.6"/>
+  <circle cx="125" cy="20" r="4" fill="rgba(0,255,70,.2)" stroke="#00ff46" stroke-width="1.2"/>
+  <path d="M80 48 Q88 30 110 26 Q130 22 148 28 Q165 34 168 44 Q165 58 148 62 L90 62 Q80 60 78 52Z" fill="rgba(0,255,70,.1)" stroke="#00ff46" stroke-width="1.1"/>
+  <path d="M145 28 Q165 34 168 44 Q165 52 148 58 L145 28Z" fill="rgba(0,255,70,.06)" stroke="#00ff46" stroke-width=".8"/>
+  <path d="M82 52 L32 50 Q22 50 18 47 Q22 44 32 44 L82 48Z" fill="rgba(0,255,70,.06)" stroke="#00ff46" stroke-width=".9"/>
+  <line x1="18" y1="40" x2="18" y2="54" stroke="#00ff46" stroke-width="1.4"/>
+  <circle cx="18" cy="47" r="3" fill="rgba(0,255,70,.2)" stroke="#00ff46" stroke-width="1"/>
+  <line x1="100" y1="62" x2="100" y2="72" stroke="#00ff46" stroke-width="1.2"/>
+  <line x1="130" y1="62" x2="130" y2="72" stroke="#00ff46" stroke-width="1.2"/>
+  <line x1="88" y1="72" x2="144" y2="72" stroke="#00ff46" stroke-width="1.2"/>
+</svg>`,
+biz:`<svg viewBox="0 0 220 78" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M22 38 L172 38 Q188 38 196 33 L202 29 L196 26 Q188 23 172 24 L22 24 Q12 24 10 31 Q12 38 22 38Z" fill="rgba(0,255,70,.1)" stroke="#00ff46" stroke-width="1.1"/>
+  <path d="M196 26 Q208 28 210 31 Q208 33 196 33Z" fill="#00ff46" opacity=".55"/>
+  <rect x="186" y="26.5" width="7" height="2.5" rx="1" fill="#00ff46" opacity=".85"/>
+  <path d="M118 24 L74 6 L68 9 L102 24Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".9"/>
+  <path d="M118 38 L74 56 L68 53 L102 38Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".9"/>
+  <path d="M68 9 L62 1 L65 5Z" fill="#00ff46" opacity=".55"/>
+  <path d="M68 53 L62 61 L65 57Z" fill="#00ff46" opacity=".55"/>
+  <ellipse cx="90" cy="9" rx="9" ry="2.8" fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width=".9"/>
+  <ellipse cx="90" cy="53" rx="9" ry="2.8" fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width=".9"/>
+  <path d="M32 24 L16 14 L13 17 L26 24Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".8"/>
+  <path d="M32 38 L16 48 L13 45 L26 38Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".8"/>
+  <path d="M24 24 L17 6 L21 6 L32 24Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".8"/>
+</svg>`,
+mil:`<svg viewBox="0 0 220 88" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M16 46 L155 46 Q168 46 175 41 L182 37 Q178 32 175 32 L155 33 L16 34 Q7 34 5 40 Q7 46 16 46Z" fill="rgba(0,255,70,.08)" stroke="#00ff46" stroke-width="1.1" stroke-dasharray="5,2"/>
+  <path d="M175 32 Q188 35 190 38 Q188 41 175 41Z" fill="#00ff46" opacity=".35"/>
+  <path d="M100 33 L50 7 L44 10 L82 33Z" fill="rgba(0,255,70,.15)" stroke="#00ff46" stroke-width=".9" stroke-dasharray="4,2"/>
+  <path d="M100 34 L50 60 L44 57 L82 34Z" fill="rgba(0,255,70,.15)" stroke="#00ff46" stroke-width=".9" stroke-dasharray="4,2"/>
+  <ellipse cx="78" cy="10" rx="9" ry="2.8" fill="rgba(0,255,70,.1)" stroke="#00ff46" stroke-width=".8" stroke-dasharray="3,2"/>
+  <ellipse cx="60" cy="6" rx="8" ry="2.5" fill="rgba(0,255,70,.1)" stroke="#00ff46" stroke-width=".8" stroke-dasharray="3,2"/>
+  <ellipse cx="78" cy="57" rx="9" ry="2.8" fill="rgba(0,255,70,.1)" stroke="#00ff46" stroke-width=".8" stroke-dasharray="3,2"/>
+  <ellipse cx="60" cy="61" rx="8" ry="2.5" fill="rgba(0,255,70,.1)" stroke="#00ff46" stroke-width=".8" stroke-dasharray="3,2"/>
+  <path d="M24 33 L9 20 L6 23 L18 33Z" fill="rgba(0,255,70,.15)" stroke="#00ff46" stroke-width=".8"/>
+  <path d="M24 46 L9 59 L6 56 L18 46Z" fill="rgba(0,255,70,.15)" stroke="#00ff46" stroke-width=".8"/>
+  <path d="M17 33 L10 13 L14 13 L24 33Z" fill="rgba(0,255,70,.15)" stroke="#00ff46" stroke-width=".8"/>
+</svg>`
+};
+
+function getSil(t){
+  const map={heli:'heli',a380:'a380',b747:'b747',wb:'wb',biz:'biz',mil:'mil',nb:'nb'};
+  return SIL[map[acCat(t)]]||SIL.nb;
+}
+
+/* ── CANVAS ── */
+const canvas=document.getElementById('rc');
+const ctx=canvas.getContext('2d');
+let rafId=null,CX,CY,RPX;
+
+function setupCanvas(){
+  const wrap=document.getElementById('radar-wrap');
+  const avW=wrap.clientWidth-16;
+  const avH=Math.floor(window.innerHeight*0.44);
+  const SZ=Math.min(avW,avH,400);
+  canvas.width=SZ;canvas.height=SZ;
+  canvas.style.width=SZ+'px';canvas.style.height=SZ+'px';
+  CX=SZ/2;CY=SZ/2;RPX=SZ/2-6;
+}
+
+function drawRadar(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const bg=ctx.createRadialGradient(CX,CY,0,CX,CY,RPX);
+  bg.addColorStop(0,'#0e200e');bg.addColorStop(0.7,'#071207');bg.addColorStop(1,'#030a03');
+  ctx.beginPath();ctx.arc(CX,CY,RPX,0,Math.PI*2);ctx.fillStyle=bg;ctx.fill();
+
+  [.25,.5,.75,1].forEach((f,i)=>{
+    ctx.beginPath();ctx.arc(CX,CY,RPX*f,0,Math.PI*2);
+    ctx.strokeStyle=`rgba(0,255,70,${i===3?.28:.1})`;ctx.lineWidth=1;ctx.stroke();
+    if(i<3){
+      const d=Math.round(S.radius*f),fs=Math.max(8,canvas.width/48);
+      ctx.fillStyle='rgba(0,255,70,.3)';ctx.font=`${fs}px 'Courier New'`;
+      ctx.textAlign='left';
+      ctx.fillText(d+'km',CX+RPX*f*0.695+1,CY-RPX*f*0.695-2);
+    }
+  });
+
+  ctx.strokeStyle='rgba(0,255,70,.09)';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(CX,CY-RPX);ctx.lineTo(CX,CY+RPX);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(CX-RPX,CY);ctx.lineTo(CX+RPX,CY);ctx.stroke();
+  const fc=Math.max(9,canvas.width/34);
+  ctx.fillStyle='rgba(0,255,70,.45)';ctx.font=`bold ${fc}px 'Courier New'`;
+  ctx.textAlign='center';
+  ctx.fillText('N',CX,CY-RPX+fc+1);ctx.fillText('S',CX,CY+RPX-3);
+  ctx.textAlign='left';ctx.fillText('E',CX+RPX-fc-2,CY+4);ctx.fillText('O',CX-RPX+4,CY+4);
+
+  /* sweep */
+  ctx.save();ctx.translate(CX,CY);ctx.rotate(S.sweep);
+  for(let i=8;i>=0;i--){
+    ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,RPX,0,-0.55*i/8,false);ctx.closePath();
+    ctx.fillStyle=`rgba(0,255,70,${0.004*(8-i)})`;ctx.fill();
+  }
+  ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(RPX,0);
+  ctx.strokeStyle='rgba(0,255,70,.88)';ctx.lineWidth=1.5;ctx.stroke();
+  ctx.beginPath();ctx.arc(RPX,0,2.5,0,Math.PI*2);ctx.fillStyle='#00ff46';ctx.fill();
+  ctx.restore();
+  S.sweep+=0.022;
+
+  /* blips */
+  S.blips=[];
+  if(S.lat!==null){
+    S.ac.forEach((ac,idx)=>{
+      if(!ac.lat||!ac.lon)return;
+      const dist=haversine(S.lat,S.lon,ac.lat,ac.lon);
+      if(dist>S.radius)return;
+      const bear=bearingTo(S.lat,S.lon,ac.lat,ac.lon);
+      const scale=(dist/S.radius)*(RPX-10);
+      const bx=CX+Math.sin(bear*Math.PI/180)*scale;
+      const by=CY-Math.cos(bear*Math.PI/180)*scale;
+      const sel=idx===S.selIdx;
+
+      if(sel){
+        for(const r of[14,9]){
+          ctx.beginPath();ctx.arc(bx,by,r,0,Math.PI*2);
+          ctx.strokeStyle=`rgba(0,255,70,${r===14?.1:.25})`;ctx.lineWidth=1;ctx.stroke();
+        }
+      }
+      const bR=sel?6:4;
+      ctx.beginPath();ctx.arc(bx,by,bR,0,Math.PI*2);
+      ctx.fillStyle=sel?'#00ff46':'rgba(0,255,70,.6)';
+      if(sel){ctx.shadowColor='#00ff46';ctx.shadowBlur=10;}
+      ctx.fill();ctx.shadowBlur=0;
+
+      if(ac.track!=null){
+        const aLen=sel?14:9,aRad=ac.track*Math.PI/180;
+        const ax=bx+Math.sin(aRad)*aLen,ay=by-Math.cos(aRad)*aLen;
+        ctx.beginPath();ctx.moveTo(bx,by);ctx.lineTo(ax,ay);
+        ctx.strokeStyle=sel?'rgba(0,255,70,.9)':'rgba(0,255,70,.35)';
+        ctx.lineWidth=sel?1.5:1;ctx.stroke();
+        const p=4,pa=0.45;
+        ctx.beginPath();ctx.moveTo(ax,ay);
+        ctx.lineTo(ax-Math.sin(aRad-pa)*p,ay+Math.cos(aRad-pa)*p);
+        ctx.lineTo(ax-Math.sin(aRad+pa)*p,ay+Math.cos(aRad+pa)*p);
+        ctx.closePath();ctx.fillStyle=sel?'rgba(0,255,70,.9)':'rgba(0,255,70,.35)';ctx.fill();
+      }
+
+      const fn=Math.max(8,canvas.width/42);
+      ctx.fillStyle=sel?'#00ff46':'rgba(0,255,70,.75)';
+      ctx.font=`bold ${fn}px 'Courier New'`;ctx.textAlign='left';
+      ctx.fillText(idx+1,bx+bR+2,by-bR);
+      S.blips.push({x:bx,y:by,idx});
+    });
+  }
+
+  /* centro utente */
+  ctx.beginPath();ctx.arc(CX,CY,4,0,Math.PI*2);
+  ctx.fillStyle='#00ff46';ctx.shadowColor='#00ff46';ctx.shadowBlur=10;ctx.fill();ctx.shadowBlur=0;
+  ctx.beginPath();ctx.arc(CX,CY,9,0,Math.PI*2);
+  ctx.strokeStyle='rgba(0,255,70,.35)';ctx.lineWidth=1;ctx.stroke();
+  ctx.strokeStyle='rgba(0,0,0,.8)';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(CX-3,CY);ctx.lineTo(CX+3,CY);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(CX,CY-3);ctx.lineTo(CX,CY+3);ctx.stroke();
+  ctx.beginPath();ctx.arc(CX,CY,RPX,0,Math.PI*2);
+  ctx.strokeStyle='rgba(0,255,70,.3)';ctx.lineWidth=2;ctx.stroke();
+
+  rafId=requestAnimationFrame(drawRadar);
+}
+
+function onTap(e){
+  e.preventDefault();
+  const rect=canvas.getBoundingClientRect();
+  let cx,cy;
+  if(e.touches){cx=e.touches[0].clientX-rect.left;cy=e.touches[0].clientY-rect.top;}
+  else{cx=e.clientX-rect.left;cy=e.clientY-rect.top;}
+  const sx=canvas.width/rect.width,sy=canvas.height/rect.height;
+  const px=cx*sx,py=cy*sy;
+  let best=null,bestD=30;
+  S.blips.forEach(b=>{const d=Math.hypot(b.x-px,b.y-py);if(d<bestD){bestD=d;best=b;}});
+  if(best){S.selIdx=best.idx;renderPanel(S.ac[S.selIdx]);}
+}
+canvas.addEventListener('click',onTap);
+canvas.addEventListener('touchstart',onTap,{passive:false});
+
+/* ── FETCH ── */
+async function fetchAC(){
+  if(S.lat===null)return;
+  const nm=Math.max(11,Math.ceil(S.radius/1.852));
+  const url=`https://api.airplanes.live/v2/point/${S.lat}/${S.lon}/${nm}`;
+  try{
+    const r=await fetch(url,{signal:AbortSignal.timeout(8000)});
+    if(!r.ok)return;
+    const data=await r.json();
+    let ac=(data.ac||[]).filter(a=>a.lat&&a.lon);
+    ac.sort((a,b)=>haversine(S.lat,S.lon,a.lat,a.lon)-haversine(S.lat,S.lon,b.lat,b.lon));
+    S.ac=ac;
+    S.lastUpd=new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    if(S.selIdx>=ac.length)S.selIdx=0;
+    document.getElementById('hcount').textContent=ac.length+' IN ZONA';
+    if(ac.length===0){
+      document.getElementById('nosig').style.display='';
+      document.getElementById('finfo').style.display='none';
+    }else{
+      document.getElementById('nosig').style.display='none';
+      document.getElementById('finfo').style.display='';
+      renderPanel(ac[S.selIdx]);
+      ac.slice(0,12).forEach(a=>{if(a.hex)fetchHex(a.hex);});
+    }
+  }catch(e){console.warn('fetchAC:',e.message);}
+}
+
+async function fetchHex(hex){
+  if(S.hexCache[hex]!==undefined)return;
+  S.hexCache[hex]=null;
+  try{
+    const r=await fetch(`https://hexdb.io/api/v1/aircraft/${hex}`,{signal:AbortSignal.timeout(5000)});
+    if(!r.ok)return;
+    const d=await r.json();
+    S.hexCache[hex]={type:d.ICAOTypeCode||d.Type||null,op:d.RegisteredOwners||d.Operator||null,reg:d.Registration||null};
+    if(S.ac[S.selIdx]?.hex===hex)renderPanel(S.ac[S.selIdx]);
+  }catch{}
+}
+
+/* ── PANEL ── */
+function renderPanel(ac){
+  if(!ac)return;
+  const hx=S.hexCache[ac.hex]||{};
+  const cs=(ac.flight||'').trim()||ac.hex||'—';
+  const aln=airlineName(cs,ac.ownOp||hx.op);
+  const typ=(ac.t||hx.type||'').toUpperCase()||'—';
+  const dist=S.lat?Math.round(haversine(S.lat,S.lon,ac.lat,ac.lon)):'—';
+  const altFt=ac.alt_baro??ac.alt_geom;
+  const altFtS=altFt!=null?Math.round(altFt).toLocaleString('it-IT'):'—';
+  const altM=altFt!=null?Math.round(altFt*0.3048):null;
+  const spd=ac.gs!=null?Math.round(ac.gs*1.852):null;
+  const vr=ac.baro_rate;
+  const trk=ac.track!=null?Math.round(ac.track):null;
+  const total=S.ac.length,num=S.selIdx+1;
+
+  let phase='—';
+  if(altFt!=null){
+    if(altFt<800)phase='DECOLLO / ATTERRAGGIO';
+    else if(altFt<5000)phase=vr!=null&&vr>200?'SALITA INIZIALE':(vr!=null&&vr<-200?'AVVICINAMENTO':'TRANSIZIONE');
+    else if(vr!=null&&vr>400)phase='SALITA';
+    else if(vr!=null&&vr<-400)phase='DISCESA';
+    else phase='CROCIERA';
+  }
+
+  const orig=(ac.dep||ac.origin||'—').toUpperCase();
+  const dest=(ac.arr||ac.destination||'—').toUpperCase();
+  let sil=getSil(typ!=='—'?typ:null).replace('<svg ','<svg width="180" height="72" ');
+
+  const vrStr=vr!=null
+    ?`<span style="color:${vr>50?'#00ff46':vr<-50?'#ff6b35':'#00ff46'}">${vr>50?'↑':vr<-50?'↓':'→'}${Math.abs(Math.round(vr))}</span>`
+    :'—';
+
+  document.getElementById('finfo').innerHTML=`
+    ${total>1?`<div class="nav-hint">✈ ${num}/${total} &nbsp;·&nbsp; TAP SUL RADAR PER SELEZIONARE</div>`:''}
+    <div class="sil-wrap">${sil}</div>
+    <div class="cs">${cs}</div>
+    <div class="aname">${aln}</div>
+    <div class="atype">${typ!=='—'?typ:''}${hx.reg?' · '+hx.reg:''}</div>
+    <div class="route">
+      <div class="ap">
+        <div class="ap-code">${orig}</div>
+        <div class="ap-lbl">PARTENZA</div>
+      </div>
+      <div class="rarr">⟶</div>
+      <div class="ap" style="text-align:right">
+        <div class="ap-code">${dest}</div>
+        <div class="ap-lbl">ARRIVO</div>
+      </div>
+    </div>
+    <div class="sgrid">
+      <div class="sbox"><div class="sv">${dist}</div><div class="sl">KM DA TE</div></div>
+      <div class="sbox"><div class="sv">${altFtS}</div><div class="sl">PIEDI</div></div>
+      <div class="sbox"><div class="sv">${spd!=null?spd:'—'}</div><div class="sl">KM/H</div></div>
+      <div class="sbox"><div class="sv">${trk!=null?trk+'°':'—'}</div><div class="sl">${trk!=null?hdgLabel(trk):'ROTTA'}</div></div>
+      <div class="sbox"><div class="sv">${altM!=null?(altM/1000).toFixed(1)+'k':'—'}</div><div class="sl">METRI</div></div>
+      <div class="sbox"><div class="sv">${vrStr}</div><div class="sl">FT/MIN</div></div>
+    </div>
+    <div class="pbar">
+      <span>FASE: <strong>${phase}</strong></span>
+      <span>${S.lastUpd?'⟳ '+S.lastUpd:''}</span>
+    </div>
+  `;
+}
+
+/* ── SETTINGS ── */
+document.getElementById('rslider').addEventListener('input',function(){
+  S.radius=parseInt(this.value);
+  document.getElementById('rval').textContent=S.radius+' KM';
+  fetchAC();
+});
+
+/* ── CLOCK ── */
+setInterval(()=>{
+  document.getElementById('hclock').textContent=
+    new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+},1000);
+
+/* ── INIT ── */
+function startApp(lat,lon){
+  S.lat=lat;S.lon=lon;
+  document.getElementById('loading').classList.add('hidden');
+  document.getElementById('app').style.display='';
+  setupCanvas();
+  if(rafId)cancelAnimationFrame(rafId);
+  drawRadar();fetchAC();
+  if(S.timer)clearInterval(S.timer);
+  S.timer=setInterval(fetchAC,10000);
+}
+
+navigator.geolocation.getCurrentPosition(
+  p=>startApp(p.coords.latitude,p.coords.longitude),
+  ()=>{
+    document.getElementById('loading').innerHTML=
+      '<div style="font-size:26px;color:#ff4444">⊗</div>'+
+      '<div>GPS NON DISPONIBILE</div>'+
+      '<div style="font-size:9px;opacity:.4;letter-spacing:2px;margin-top:10px;text-align:center;max-width:260px">Controlla i permessi di geolocalizzazione nelle impostazioni del browser</div>';
+  },
+  {enableHighAccuracy:true,timeout:15000,maximumAge:30000}
+);
+
+navigator.geolocation.watchPosition(
+  p=>{S.lat=p.coords.latitude;S.lon=p.coords.longitude;},
+  ()=>{},{enableHighAccuracy:true}
+);
+
+window.addEventListener('resize',setupCanvas);
+if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
