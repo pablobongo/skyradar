@@ -12,58 +12,64 @@
   <meta name="apple-mobile-web-app-title" content="SkyRadar">
   <style>
     *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-    :root{--g:#00ff46;--gd:rgba(0,255,70,.55);--gf:rgba(0,255,70,.12);--bg:#030a03;--f:'Courier New','Lucida Console',monospace;}
+    :root{--g:#00ff46;--gb:rgba(0,255,70,.7);--gf:rgba(0,255,70,.13);--bg:#030a03;--f:'Courier New','Lucida Console',monospace;}
     html,body{height:100%;background:var(--bg);color:var(--g);font-family:var(--f);overflow:hidden;}
     #loading{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;z-index:200;font-size:11px;letter-spacing:4px;}
     #loading.hidden{display:none;}
     .spinner{width:44px;height:44px;border:2px solid rgba(0,255,70,.15);border-top-color:var(--g);border-radius:50%;animation:spin 1s linear infinite;}
     @keyframes spin{to{transform:rotate(360deg)}}
     #app{display:flex;flex-direction:column;height:100vh;height:100dvh;}
-    #header{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;border-bottom:1px solid var(--gf);flex-shrink:0;font-size:11px;letter-spacing:3px;}
-    .hlogo{font-size:13px;font-weight:bold;display:flex;align-items:center;gap:6px;}
+    #header{display:flex;justify-content:space-between;align-items:center;padding:7px 12px;border-bottom:1px solid var(--gf);flex-shrink:0;font-size:11px;letter-spacing:2px;gap:8px;}
+    .hlogo{font-size:12px;font-weight:bold;display:flex;align-items:center;gap:6px;flex-shrink:0;}
     .dot{width:6px;height:6px;border-radius:50%;background:var(--g);animation:blink 2s infinite;}
     @keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
-    #hclock{opacity:.55;font-size:12px;}
-    #hcount{opacity:.65;font-size:10px;}
-    #radar-wrap{display:flex;justify-content:center;align-items:center;flex-shrink:0;padding:8px 8px 4px;}
+    .hver{font-size:9px;opacity:.4;letter-spacing:2px;}
+    #hclock{opacity:.55;font-size:11px;flex-shrink:0;}
+    #audiobtn{background:none;border:1px solid var(--gf);color:var(--g);font-size:14px;cursor:pointer;width:28px;height:22px;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0;line-height:1;}
+    #hcount{opacity:.65;font-size:10px;flex-shrink:0;}
+    #radar-wrap{display:flex;justify-content:center;align-items:center;flex-shrink:0;padding:6px 8px 3px;}
     #rc{cursor:crosshair;touch-action:none;display:block;border-radius:50%;}
     #panel{flex:1;overflow-y:auto;overflow-x:hidden;}
     #panel::-webkit-scrollbar{width:3px;}
     #panel::-webkit-scrollbar-thumb{background:var(--gf);}
     .no-sig{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:.3;font-size:11px;letter-spacing:4px;gap:14px;text-align:center;padding:20px;}
-    #finfo{padding:6px 14px 14px;}
-    .nav-hint{text-align:center;font-size:9px;opacity:.35;letter-spacing:3px;margin-bottom:10px;padding-top:4px;}
-    .sil-wrap{display:flex;justify-content:center;align-items:center;margin:4px 0 8px;}
+    #finfo{padding:4px 12px 12px;}
+    .nav-hint{text-align:center;font-size:9px;opacity:.35;letter-spacing:3px;margin-bottom:8px;padding-top:2px;}
+    .sil-wrap{display:flex;justify-content:center;align-items:center;margin:2px 0 6px;}
     .cs{font-size:clamp(28px,8vw,44px);font-weight:bold;letter-spacing:5px;text-align:center;text-shadow:0 0 18px var(--g),0 0 40px rgba(0,255,70,.3);line-height:1.1;}
-    .aname{text-align:center;font-size:11px;opacity:.65;letter-spacing:3px;margin-top:3px;}
-    .atype{text-align:center;font-size:10px;opacity:.4;letter-spacing:2px;margin-top:2px;margin-bottom:10px;}
-    .route{display:flex;align-items:center;gap:8px;border:1px solid var(--gf);padding:10px 12px;margin-bottom:10px;background:rgba(0,255,70,.025);}
+    .aname{text-align:center;font-size:12px;font-weight:bold;opacity:.75;letter-spacing:3px;margin-top:3px;}
+    .atype{text-align:center;font-size:13px;font-weight:bold;color:var(--g);letter-spacing:2px;margin-top:3px;margin-bottom:10px;}
+    .route{display:flex;align-items:stretch;gap:6px;border:1px solid var(--gf);padding:10px 10px;margin-bottom:8px;background:rgba(0,255,70,.025);}
     .ap{flex:1;}
-    .ap-code{font-size:clamp(16px,5vw,22px);font-weight:bold;letter-spacing:3px;}
-    .ap-lbl{font-size:9px;opacity:.35;letter-spacing:3px;margin-top:2px;}
-    .rarr{font-size:22px;opacity:.3;}
-    .sgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;}
-    .sbox{border:1px solid var(--gf);padding:8px 6px;text-align:center;background:rgba(0,255,70,.02);}
+    .ap-flag{font-size:18px;line-height:1;margin-bottom:3px;}
+    .ap-code{font-size:clamp(18px,5.5vw,26px);font-weight:bold;letter-spacing:3px;line-height:1;}
+    .ap-city{font-size:10px;font-weight:bold;opacity:.7;letter-spacing:1px;margin-top:2px;}
+    .ap-time{font-size:11px;font-weight:bold;color:var(--g);opacity:.85;margin-top:3px;letter-spacing:1px;}
+    .ap-lbl{font-size:8px;opacity:.35;letter-spacing:3px;margin-top:3px;}
+    .rarr{font-size:20px;opacity:.3;display:flex;align-items:center;}
+    .sgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:7px;}
+    .sbox{border:1px solid var(--gf);padding:8px 5px;text-align:center;background:rgba(0,255,70,.02);}
     .sv{font-size:clamp(14px,4.5vw,20px);font-weight:bold;line-height:1.1;}
-    .sl{font-size:8px;opacity:.35;letter-spacing:2px;margin-top:4px;}
-    .pbar{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--gf);padding-top:8px;font-size:9px;opacity:.45;letter-spacing:2px;flex-wrap:wrap;gap:4px;}
-    #settings{display:flex;align-items:center;gap:10px;padding:7px 14px;border-top:1px solid var(--gf);flex-shrink:0;font-size:10px;letter-spacing:2px;}
-    #settings label{opacity:.4;flex-shrink:0;}
+    .sl{font-size:8px;font-weight:bold;opacity:.4;letter-spacing:2px;margin-top:4px;}
+    .pbar{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--gf);padding-top:7px;font-size:9px;font-weight:bold;opacity:.5;letter-spacing:2px;flex-wrap:wrap;gap:4px;}
+    #settings{display:flex;align-items:center;gap:10px;padding:6px 12px;border-top:1px solid var(--gf);flex-shrink:0;font-size:10px;letter-spacing:2px;}
+    #settings label{opacity:.4;flex-shrink:0;font-weight:bold;}
     #rslider{flex:1;-webkit-appearance:none;appearance:none;height:2px;background:var(--gf);outline:none;cursor:pointer;}
     #rslider::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--g);cursor:pointer;box-shadow:0 0 6px var(--g);}
-    #rval{min-width:44px;text-align:right;opacity:.7;flex-shrink:0;}
+    #rval{min-width:44px;text-align:right;opacity:.7;flex-shrink:0;font-weight:bold;}
   </style>
 </head>
 <body>
 <div id="loading">
   <div class="spinner"></div>
   <div>ACQUISIZIONE SEGNALE GPS...</div>
-  <div style="font-size:9px;opacity:.3;letter-spacing:3px">SKYRADAR v1.0</div>
+  <div style="font-size:9px;opacity:.3;letter-spacing:3px">SKYRADAR v2.0</div>
 </div>
 <div id="app" style="display:none">
   <div id="header">
-    <div class="hlogo"><div class="dot"></div><span>◈ SKYRADAR</span></div>
+    <div class="hlogo"><div class="dot"></div><span>◈ SKYRADAR</span><span class="hver">v2.0</span></div>
     <div id="hclock">--:--:--</div>
+    <button id="audiobtn" onclick="toggleAudio()" title="Audio on/off">🔇</button>
     <div id="hcount">0 IN ZONA</div>
   </div>
   <div id="radar-wrap"><canvas id="rc"></canvas></div>
@@ -82,8 +88,15 @@
   </div>
 </div>
 <script>
-const S={lat:null,lon:null,radius:50,ac:[],selIdx:0,sweep:0,blips:[],hexCache:{},lastUpd:null,timer:null};
+// ╔══════════════════════════════════════════╗
+// ║  SKYRADAR v2.0 — ADS-B Radar PWA        ║
+// ║  airplanes.live + hexdb.io + opensky    ║
+// ╚══════════════════════════════════════════╝
 
+const S={lat:null,lon:null,radius:50,ac:[],selIdx:0,sweep:0,blips:[],
+         hexCache:{},timeCache:{},lastUpd:null,timer:null,dpr:1};
+
+// ─── GEO ──────────────────────────────────
 function haversine(la1,lo1,la2,lo2){
   const R=6371,dLa=(la2-la1)*Math.PI/180,dLo=(lo2-lo1)*Math.PI/180;
   const a=Math.sin(dLa/2)**2+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLo/2)**2;
@@ -96,25 +109,122 @@ function bearingTo(la1,lo1,la2,lo2){
   return(Math.atan2(y,x)*180/Math.PI+360)%360;
 }
 function hdgLabel(d){return["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSO","SO","OSO","O","ONO","NO","NNO"][Math.round(d/22.5)%16];}
+function fmtTs(ts){return new Date(ts*1000).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});}
 
+// ─── AIRPORTS ─────────────────────────────
+const AP={
+  LIRF:{c:"Roma",co:"IT"},LIRA:{c:"Roma Ciampino",co:"IT"},LIMC:{c:"Milano Malpensa",co:"IT"},
+  LIML:{c:"Milano Linate",co:"IT"},LIME:{c:"Bergamo",co:"IT"},LIPE:{c:"Bologna",co:"IT"},
+  LIPX:{c:"Verona",co:"IT"},LIPZ:{c:"Venezia",co:"IT"},LIPQ:{c:"Trieste",co:"IT"},
+  LIPY:{c:"Ancona",co:"IT"},LIRN:{c:"Napoli",co:"IT"},LIBR:{c:"Brindisi",co:"IT"},
+  LIBD:{c:"Bari",co:"IT"},LICA:{c:"Lamezia Terme",co:"IT"},LICJ:{c:"Palermo",co:"IT"},
+  LICC:{c:"Catania",co:"IT"},LICT:{c:"Trapani",co:"IT"},LICB:{c:"Comiso",co:"IT"},
+  LIEE:{c:"Cagliari",co:"IT"},LIEO:{c:"Olbia",co:"IT"},LIEA:{c:"Alghero",co:"IT"},
+  LIMS:{c:"Pisa",co:"IT"},LILQ:{c:"Pescara",co:"IT"},LIRC:{c:"Frosinone",co:"IT"},
+  EGLL:{c:"Londra Heathrow",co:"GB"},EGKK:{c:"Londra Gatwick",co:"GB"},
+  EGCC:{c:"Manchester",co:"GB"},EGGW:{c:"Londra Luton",co:"GB"},
+  EGSS:{c:"Londra Stansted",co:"GB"},EGPH:{c:"Edimburgo",co:"GB"},
+  EGPF:{c:"Glasgow",co:"GB"},EIDW:{c:"Dublino",co:"IE"},
+  EHAM:{c:"Amsterdam",co:"NL"},EHRD:{c:"Rotterdam",co:"NL"},
+  LFPG:{c:"Parigi CDG",co:"FR"},LFPO:{c:"Parigi Orly",co:"FR"},
+  LFMN:{c:"Nizza",co:"FR"},LFLL:{c:"Lione",co:"FR"},LFRS:{c:"Nantes",co:"FR"},
+  LFBO:{c:"Tolosa",co:"FR"},LFBD:{c:"Bordeaux",co:"FR"},LFSB:{c:"Basilea",co:"FR"},
+  EDDF:{c:"Francoforte",co:"DE"},EDDM:{c:"Monaco",co:"DE"},EDDB:{c:"Berlino",co:"DE"},
+  EDDH:{c:"Amburgo",co:"DE"},EDDK:{c:"Colonia",co:"DE"},EDDL:{c:"Düsseldorf",co:"DE"},
+  EDDS:{c:"Stoccarda",co:"DE"},EDDN:{c:"Norimberga",co:"DE"},
+  LEMD:{c:"Madrid",co:"ES"},LEBL:{c:"Barcellona",co:"ES"},LEPA:{c:"Palma Maiorca",co:"ES"},
+  LEMG:{c:"Malaga",co:"ES"},LEAL:{c:"Alicante",co:"ES"},LEBB:{c:"Bilbao",co:"ES"},
+  GCLP:{c:"Las Palmas",co:"ES"},GCXO:{c:"Tenerife Nord",co:"ES"},GCTS:{c:"Tenerife Sud",co:"ES"},
+  GCFV:{c:"Fuerteventura",co:"ES"},GCRR:{c:"Lanzarote",co:"ES"},
+  LPPT:{c:"Lisbona",co:"PT"},LPMA:{c:"Madeira",co:"PT"},LPAZ:{c:"São Miguel",co:"PT"},
+  LSZH:{c:"Zurigo",co:"CH"},LSGG:{c:"Ginevra",co:"CH"},LSZA:{c:"Lugano",co:"CH"},
+  LOWW:{c:"Vienna",co:"AT"},LOWS:{c:"Salisburgo",co:"AT"},LOWG:{c:"Graz",co:"AT"},
+  LKPR:{c:"Praga",co:"CZ"},LKMT:{c:"Ostrava",co:"CZ"},
+  EPWA:{c:"Varsavia",co:"PL"},EPKK:{c:"Cracovia",co:"PL"},EPGD:{c:"Danzica",co:"PL"},
+  LHBP:{c:"Budapest",co:"HU"},LDZA:{c:"Zagabria",co:"HR"},LJLJ:{c:"Lubiana",co:"SI"},
+  LYBE:{c:"Belgrado",co:"RS"},LWSK:{c:"Skopje",co:"MK"},LATI:{c:"Tirana",co:"AL"},
+  LBSF:{c:"Sofia",co:"BG"},LROP:{c:"Bucarest",co:"RO"},LUKK:{c:"Chisinau",co:"MD"},
+  UKBB:{c:"Kiev",co:"UA"},UKKK:{c:"Kiev Zhuliany",co:"UA"},
+  UMMS:{c:"Minsk",co:"BY"},EVRA:{c:"Riga",co:"LV"},EYVI:{c:"Vilnius",co:"LT"},
+  EETN:{c:"Tallinn",co:"EE"},EFHK:{c:"Helsinki",co:"FI"},
+  ENGM:{c:"Oslo",co:"NO"},ESSA:{c:"Stoccolma",co:"SE"},EKCH:{c:"Copenaghen",co:"DK"},
+  BIKF:{c:"Reykjavik",co:"IS"},
+  LGAV:{c:"Atene",co:"GR"},LGTS:{c:"Salonicco",co:"GR"},LGRP:{c:"Rodi",co:"GR"},
+  LGKR:{c:"Corfù",co:"GR"},LGMK:{c:"Mykonos",co:"GR"},LGSR:{c:"Santorini",co:"GR"},
+  LCLK:{c:"Larnaca",co:"CY"},LCPH:{c:"Pafo",co:"CY"},
+  LLBG:{c:"Tel Aviv",co:"IL"},HECA:{c:"Il Cairo",co:"EG"},
+  LTFM:{c:"Istanbul",co:"TR"},LTBA:{c:"Istanbul Ataturk",co:"TR"},LTAI:{c:"Antalya",co:"TR"},
+  LTFJ:{c:"Istanbul Sabiha",co:"TR"},LTAC:{c:"Ankara",co:"TR"},LTFE:{c:"Bodrum",co:"TR"},
+  OMDB:{c:"Dubai",co:"AE"},OMAA:{c:"Abu Dhabi",co:"AE"},OMDW:{c:"Dubai Al Maktoum",co:"AE"},
+  OERK:{c:"Riyadh",co:"SA"},OEJN:{c:"Jeddah",co:"SA"},OEDF:{c:"Dammam",co:"SA"},
+  OTHH:{c:"Doha",co:"QA"},OBBI:{c:"Bahrain",co:"BH"},OOMS:{c:"Muscat",co:"OM"},
+  OKBK:{c:"Kuwait",co:"KW"},OJAM:{c:"Amman",co:"JO"},OLBA:{c:"Beirut",co:"LB"},
+  UUEE:{c:"Mosca Sheremetyevo",co:"RU"},UUDD:{c:"Mosca Domodedovo",co:"RU"},
+  UUWW:{c:"Mosca Vnukovo",co:"RU"},USSS:{c:"Ekaterinburg",co:"RU"},
+  VHHH:{c:"Hong Kong",co:"HK"},RJTT:{c:"Tokyo Haneda",co:"JP"},RJAA:{c:"Tokyo Narita",co:"JP"},
+  RKSI:{c:"Seoul Incheon",co:"KR"},ZBAA:{c:"Pechino",co:"CN"},ZSPD:{c:"Shanghai Pudong",co:"CN"},
+  ZGGG:{c:"Guangzhou",co:"CN"},ZUCK:{c:"Chongqing",co:"CN"},
+  VIDP:{c:"Delhi",co:"IN"},VABB:{c:"Mumbai",co:"IN"},VOMM:{c:"Chennai",co:"IN"},
+  VOBL:{c:"Bangalore",co:"IN"},VECC:{c:"Calcutta",co:"IN"},
+  VTBS:{c:"Bangkok",co:"TH"},WSSS:{c:"Singapore",co:"SG"},
+  WMKK:{c:"Kuala Lumpur",co:"MY"},WIII:{c:"Giacarta",co:"ID"},
+  NZAA:{c:"Auckland",co:"NZ"},YSSY:{c:"Sydney",co:"AU"},YMML:{c:"Melbourne",co:"AU"},
+  YBBN:{c:"Brisbane",co:"AU"},YPER:{c:"Perth",co:"AU"},
+  KJFK:{c:"New York JFK",co:"US"},KLAX:{c:"Los Angeles",co:"US"},KORD:{c:"Chicago",co:"US"},
+  KATL:{c:"Atlanta",co:"US"},KMIA:{c:"Miami",co:"US"},KSFO:{c:"San Francisco",co:"US"},
+  KBOS:{c:"Boston",co:"US"},KDFW:{c:"Dallas",co:"US"},KEWR:{c:"Newark",co:"US"},
+  KIAH:{c:"Houston",co:"US"},KDEN:{c:"Denver",co:"US"},KLAS:{c:"Las Vegas",co:"US"},
+  KPHX:{c:"Phoenix",co:"US"},KSEA:{c:"Seattle",co:"US"},KMSP:{c:"Minneapolis",co:"US"},
+  KDTW:{c:"Detroit",co:"US"},KPHL:{c:"Philadelphia",co:"US"},KLGA:{c:"New York LGA",co:"US"},
+  KFLL:{c:"Fort Lauderdale",co:"US"},KTPA:{c:"Tampa",co:"US"},KMCO:{c:"Orlando",co:"US"},
+  CYYZ:{c:"Toronto",co:"CA"},CYVR:{c:"Vancouver",co:"CA"},CYUL:{c:"Montreal",co:"CA"},
+  CYYC:{c:"Calgary",co:"CA"},CYOW:{c:"Ottawa",co:"CA"},CYEG:{c:"Edmonton",co:"CA"},
+  SBGR:{c:"São Paulo",co:"BR"},SBKP:{c:"Campinas",co:"BR"},SBBR:{c:"Brasilia",co:"BR"},
+  SBRF:{c:"Recife",co:"BR"},SBSV:{c:"Salvador",co:"BR"},SBPA:{c:"Porto Alegre",co:"BR"},
+  SAEZ:{c:"Buenos Aires",co:"AR"},MMMX:{c:"Città del Messico",co:"MX"},
+  FACT:{c:"Città del Capo",co:"ZA"},FAOR:{c:"Johannesburg",co:"ZA"},HKJK:{c:"Nairobi",co:"KE"},
+  HAAB:{c:"Addis Abeba",co:"ET"},DNMM:{c:"Lagos",co:"NG"},DTTA:{c:"Tunisi",co:"TN"},
+  DAAG:{c:"Algeri",co:"DZ"},GMMN:{c:"Casablanca",co:"MA"},DTMB:{c:"Monastir",co:"TN"},
+  PHNL:{c:"Honolulu",co:"US"},PHOG:{c:"Maui",co:"US"},
+};
+
+function flag(co){
+  if(!co)return'';
+  return co.toUpperCase().split('').map(c=>String.fromCodePoint(c.charCodeAt(0)-65+0x1F1E6)).join('');
+}
+function apInfo(icao){
+  if(!icao||icao==='—'||icao.length<3)return null;
+  const code=icao.toUpperCase().substring(0,4);
+  const r=AP[code];
+  if(r)return{code,city:r.c,flag:flag(r.co)};
+  // fallback IATA-like (3 lettere)
+  return{code,city:'',flag:''};
+}
+
+// ─── AIRLINES ─────────────────────────────
 const AL={
-  "AZA":"ITA Airways","RYR":"Ryanair","EZY":"easyJet","VLG":"Vueling","IBE":"Iberia",
-  "BAW":"British Airways","DLH":"Lufthansa","AFR":"Air France","KLM":"KLM","THY":"Turkish Airlines",
-  "UAE":"Emirates","QTR":"Qatar Airways","ETD":"Etihad","SWR":"Swiss","AUA":"Austrian",
-  "TAP":"TAP Portugal","SAS":"SAS","NAX":"Norwegian","WZZ":"Wizz Air","TVS":"Transavia",
-  "AEE":"Aegean","VOE":"Volotea","EIN":"Aer Lingus","FIN":"Finnair","BEL":"Brussels Airlines",
-  "AAL":"American Airlines","UAL":"United Airlines","DAL":"Delta Air Lines","SWA":"Southwest",
-  "NOS":"Neos","BPA":"Blue Panorama","TOM":"TUI Airways","MSR":"EgyptAir","SVA":"Saudia",
-  "ELY":"El Al","RAM":"Royal Air Maroc","GFA":"Gulf Air","PGT":"Pegasus Airlines",
-  "ADR":"Adria Airways","EJU":"easyJet Europe","CSN":"China Southern","CCA":"Air China",
-  "AZ":"ITA Airways","FR":"Ryanair","U2":"easyJet","VY":"Vueling","IB":"Iberia",
-  "BA":"British Airways","LH":"Lufthansa","AF":"Air France","TK":"Turkish Airlines",
-  "EK":"Emirates","QR":"Qatar Airways","EY":"Etihad","LX":"Swiss","OS":"Austrian",
-  "TP":"TAP Portugal","SK":"SAS","DY":"Norwegian","W6":"Wizz Air","HV":"Transavia",
-  "A3":"Aegean","V7":"Volotea","EI":"Aer Lingus","AY":"Finnair","SN":"Brussels Airlines",
-  "AA":"American Airlines","UA":"United Airlines","DL":"Delta Air Lines","WN":"Southwest",
-  "NO":"Neos","PC":"Pegasus Airlines","MS":"EgyptAir","SV":"Saudia","LY":"El Al",
-  "AT":"Royal Air Maroc","GF":"Gulf Air","EN":"Air Dolomiti"
+  AZA:"ITA Airways",RYR:"Ryanair",EZY:"easyJet",VLG:"Vueling",IBE:"Iberia",
+  BAW:"British Airways",DLH:"Lufthansa",AFR:"Air France",KLM:"KLM",THY:"Turkish Airlines",
+  UAE:"Emirates",QTR:"Qatar Airways",ETD:"Etihad",SWR:"Swiss",AUA:"Austrian",
+  TAP:"TAP Portugal",SAS:"SAS",NAX:"Norwegian",WZZ:"Wizz Air",TVS:"Transavia",
+  AEE:"Aegean",VOE:"Volotea",EIN:"Aer Lingus",FIN:"Finnair",BEL:"Brussels Airlines",
+  AAL:"American Airlines",UAL:"United Airlines",DAL:"Delta Air Lines",SWA:"Southwest",
+  NOS:"Neos",BPA:"Blue Panorama",TOM:"TUI Airways",MSR:"EgyptAir",SVA:"Saudia",
+  ELY:"El Al",RAM:"Royal Air Maroc",GFA:"Gulf Air",PGT:"Pegasus Airlines",
+  ADR:"Adria Airways",EJU:"easyJet Europe",CSN:"China Southern",CCA:"Air China",
+  QFA:"Qantas",ANZ:"Air New Zealand",UAE:"Emirates",SIA:"Singapore Airlines",
+  MAS:"Malaysia Airlines",GIA:"Garuda Indonesia",THA:"Thai Airways",ANA:"ANA",
+  JAL:"Japan Airlines",KAL:"Korean Air",AAR:"Asiana Airlines",
+  AZ:"ITA Airways",FR:"Ryanair",U2:"easyJet",VY:"Vueling",IB:"Iberia",
+  BA:"British Airways",LH:"Lufthansa",AF:"Air France",TK:"Turkish Airlines",
+  EK:"Emirates",QR:"Qatar Airways",EY:"Etihad",LX:"Swiss",OS:"Austrian",
+  TP:"TAP Portugal",SK:"SAS",DY:"Norwegian",W6:"Wizz Air",HV:"Transavia",
+  A3:"Aegean",V7:"Volotea",EI:"Aer Lingus",AY:"Finnair",SN:"Brussels Airlines",
+  AA:"American Airlines",UA:"United Airlines",DL:"Delta Air Lines",WN:"Southwest",
+  NO:"Neos",PC:"Pegasus Airlines",MS:"EgyptAir",SV:"Saudia",LY:"El Al",
+  AT:"Royal Air Maroc",GF:"Gulf Air",EN:"Air Dolomiti",QF:"Qantas",NZ:"Air New Zealand",
+  SQ:"Singapore Airlines",MH:"Malaysia Airlines",GA:"Garuda",TG:"Thai Airways",
+  NH:"ANA",JL:"Japan Airlines",KE:"Korean Air",OZ:"Asiana",
 };
 function airlineName(cs,own){
   if(own&&own.trim()&&own!=='N/A')return own.trim();
@@ -123,181 +233,372 @@ function airlineName(cs,own){
   return AL[c.substring(0,3).toUpperCase()]||AL[c.substring(0,2).toUpperCase()]||'—';
 }
 
+// ─── AIRCRAFT CATEGORY ────────────────────
 function acCat(t){
   if(!t)return'nb';
   const u=t.toUpperCase();
-  if(/^(EC\d|B06|R44|AS3|H6|S76|S92|NH9|R22)/.test(u))return'heli';
+  if(/^(EC\d|B06|R44|AS3|H6[02]|S76|S92|NH9|R22|AW1|MD9\d|BK1|EC2|EC3|H13)/.test(u))return'heli';
   if(/^A38/.test(u))return'a380';
   if(/^(B74|B748)/.test(u))return'b747';
-  if(/^(A33|A34|A35|A36|B76|B77|B78|B79|DC10|MD11)/.test(u))return'wb';
-  if(/^(GL|LJ|PC12|CJ|C25|C56|BE4|CL6|E50|DA4|DA5|SR2)/.test(u))return'biz';
-  if(/^(C17|C13|A400|B52|F16|F35|F18|C5|KC|P3|P8|C27)/.test(u))return'mil';
+  if(/^(A33|A34|A35|A36|B76|B77|B78|B79|DC10|MD11|A30[BF])/.test(u))return'wb';
+  if(/^(E17|E19|E29|CRJ|CRX|E70|E75|E90|E95|AT[457]|AT6|DH8|SF3|B73[^7-9])/.test(u))return'rj';
+  if(/^(GL|LJ|PC12|CJ[0-9]|C25|C56|C55|BE4|CL6|E50|DA4|DA5|SR2|F2T|HA4|PRM|C68|GLF)/.test(u))return'biz';
+  if(/^(C17|C13|A400|B52|C5|P3|P8|C27|IL7|IL8|AN7|C160|KC|RC|E3|E8)/.test(u))return'mil';
   return'nb';
 }
 
-/* SVG Silhouettes — orientate a destra, stile retrò anni 80, linee monochrome */
+// ─── SILHOUETTES — side view, nose right ──
 const SIL={
-nb:`<svg viewBox="0 0 220 90" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <path d="M18 42 L165 42 Q182 42 192 37 L200 33 Q196 29 192 29 L165 30 L18 30 Q8 30 6 36 Q8 42 18 42Z" fill="rgba(0,255,70,.1)" stroke="#00ff46" stroke-width="1.1"/>
-  <path d="M192 29 Q205 31 208 35 Q205 38 192 37Z" fill="#00ff46" opacity=".5"/>
-  <rect x="184" y="30.5" width="5" height="3" rx="1" fill="#00ff46" opacity=".85"/>
-  <path d="M108 30 L62 5 L56 8 L92 30Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".9"/>
-  <path d="M108 42 L62 67 L56 64 L92 42Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".9"/>
-  <path d="M56 8 L50 2 L52 5Z" fill="#00ff46" opacity=".5"/>
-  <path d="M56 64 L50 70 L52 67Z" fill="#00ff46" opacity=".5"/>
-  <ellipse cx="80" cy="9" rx="10" ry="3.5" fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width=".9"/>
-  <ellipse cx="80" cy="63" rx="10" ry="3.5" fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width=".9"/>
-  <path d="M26 30 L10 16 L7 19 L20 30Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".8"/>
-  <path d="M26 42 L10 56 L7 53 L20 42Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".8"/>
-  <path d="M20 30 L13 10 L16 10 L26 30Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".8"/>
+
+nb:`<svg viewBox="0 0 280 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- A320/B737 narrowbody — side view -->
+  <!-- Fusoliera -->
+  <path d="M 46 44 Q 70 40 100 39 L 230 39 Q 252 39 263 47 Q 252 55 230 55
+           L 100 55 Q 70 54 46 50 Q 34 48 30 47 Q 34 46 46 44 Z"
+        fill="rgba(0,255,70,.1)" stroke="#00ff46" stroke-width="1.2"/>
+  <!-- Cockpit vetri (naso destra) -->
+  <path d="M 232 41 L 253 46 L 253 49 L 232 53 Z"
+        fill="rgba(0,255,70,.07)" stroke="#00ff46" stroke-width=".8" opacity=".7"/>
+  <line x1="240" y1="41" x2="240" y2="53" stroke="#00ff46" stroke-width=".5" opacity=".5"/>
+  <!-- Ala dx (in basso nella silhouette laterale) -->
+  <path d="M 142 54 L 106 86 Q 100 89 98 87 L 130 54 Z"
+        fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width="1"/>
+  <!-- Ala sx (in alto) -->
+  <path d="M 142 40 L 106 8 Q 100 5 98 7 L 130 40 Z"
+        fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width="1"/>
+  <!-- Winglet dx -->
+  <path d="M 98 87 L 92 82 L 98 80 Z" fill="#00ff46" opacity=".6"/>
+  <!-- Winglet sx -->
+  <path d="M 98 7 L 92 12 L 98 14 Z" fill="#00ff46" opacity=".6"/>
+  <!-- Motore dx (su pylon sotto ala) -->
+  <ellipse cx="118" cy="92" rx="16" ry="4.5"
+           fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width=".9"/>
+  <path d="M 118 87 L 122 88" stroke="#00ff46" stroke-width=".8" opacity=".5"/>
+  <!-- Motore sx (sopra ala) -->
+  <ellipse cx="118" cy="4" rx="16" ry="4.5"
+           fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width=".9"/>
+  <path d="M 118 8 L 122 7" stroke="#00ff46" stroke-width=".8" opacity=".5"/>
+  <!-- Deriva verticale (coda sinistra, in alto) -->
+  <path d="M 52 39 L 36 10 L 43 9 L 57 39 Z"
+        fill="rgba(0,255,70,.2)" stroke="#00ff46" stroke-width="1"/>
+  <!-- Stabilizzatori orizzontali -->
+  <path d="M 46 44 L 22 34 L 20 36 L 40 44 Z"
+        fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".9"/>
+  <path d="M 46 50 L 22 60 L 20 58 L 40 50 Z"
+        fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".9"/>
 </svg>`,
-wb:`<svg viewBox="0 0 220 95" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <path d="M16 46 L160 46 Q178 46 188 41 L196 36 Q192 31 188 31 L160 32 L16 32 Q6 32 4 39 Q6 46 16 46Z" fill="rgba(0,255,70,.09)" stroke="#00ff46" stroke-width="1.2"/>
-  <path d="M188 31 Q202 34 205 38 Q202 41 188 41Z" fill="#00ff46" opacity=".45"/>
-  <rect x="180" y="32" width="6" height="3.5" rx="1" fill="#00ff46" opacity=".8"/>
-  <path d="M106 32 L52 4 L44 7 L82 32Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".9"/>
-  <path d="M106 46 L52 74 L44 71 L82 46Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".9"/>
-  <path d="M44 7 L37 0 L40 4Z" fill="#00ff46" opacity=".5"/>
-  <path d="M44 71 L37 78 L40 74Z" fill="#00ff46" opacity=".5"/>
-  <ellipse cx="79" cy="9" rx="10" ry="3" fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width=".9"/>
-  <ellipse cx="62" cy="5" rx="9" ry="3" fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width=".9"/>
-  <ellipse cx="79" cy="69" rx="10" ry="3" fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width=".9"/>
-  <ellipse cx="62" cy="73" rx="9" ry="3" fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width=".9"/>
-  <path d="M24 32 L8 17 L5 20 L18 32Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".8"/>
-  <path d="M24 46 L8 61 L5 58 L18 46Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".8"/>
-  <path d="M17 32 L10 11 L14 11 L24 32Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".8"/>
+
+wb:`<svg viewBox="0 0 280 110" xmlns="http://www.w3.org/2000/svg">
+  <!-- A330/B777 widebody — fusoliera più larga -->
+  <path d="M 44 47 Q 68 42 100 41 L 228 41 Q 250 41 260 50 Q 250 59 228 59
+           L 100 59 Q 68 58 44 53 Q 32 51 28 50 Q 32 49 44 47 Z"
+        fill="rgba(0,255,70,.1)" stroke="#00ff46" stroke-width="1.3"/>
+  <path d="M 230 43 L 252 49 L 252 52 L 230 57 Z"
+        fill="rgba(0,255,70,.07)" stroke="#00ff46" stroke-width=".8" opacity=".7"/>
+  <line x1="238" y1="43" x2="238" y2="57" stroke="#00ff46" stroke-width=".5" opacity=".5"/>
+  <!-- Ali più grandi e sweep pronunciato -->
+  <path d="M 140 58 L 96 95 Q 90 98 88 96 L 124 58 Z"
+        fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width="1.1"/>
+  <path d="M 140 42 L 96 5 Q 90 2 88 4 L 124 42 Z"
+        fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width="1.1"/>
+  <!-- Winglet -->
+  <path d="M 88 96 L 82 90 L 88 88 Z" fill="#00ff46" opacity=".6"/>
+  <path d="M 88 4 L 82 10 L 88 12 Z" fill="#00ff46" opacity=".6"/>
+  <!-- 2 motori grandi -->
+  <ellipse cx="114" cy="102" rx="18" ry="5"
+           fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width="1"/>
+  <ellipse cx="114" cy="-2" rx="18" ry="5"
+           fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width="1"/>
+  <!-- Deriva e stab -->
+  <path d="M 50 42 L 32 8 L 40 7 L 55 42 Z"
+        fill="rgba(0,255,70,.2)" stroke="#00ff46" stroke-width="1"/>
+  <path d="M 44 47 L 18 36 L 16 38 L 38 47 Z"
+        fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".9"/>
+  <path d="M 44 53 L 18 64 L 16 62 L 38 53 Z"
+        fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".9"/>
 </svg>`,
-a380:`<svg viewBox="0 0 220 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <path d="M16 52 L158 52 Q175 52 184 47 L192 42 Q188 37 184 37 L158 38 L16 38 Q6 38 4 45 Q6 52 16 52Z" fill="rgba(0,255,70,.08)" stroke="#00ff46" stroke-width="1.2"/>
-  <path d="M60 38 L158 38 Q170 38 174 34 Q170 30 158 30 L60 30 Q52 30 50 34 Q52 38 60 38Z" fill="rgba(0,255,70,.06)" stroke="#00ff46" stroke-width=".9"/>
-  <path d="M184 37 Q199 40 202 44 Q199 47 184 47Z" fill="#00ff46" opacity=".42"/>
-  <rect x="176" y="38" width="6" height="3.5" rx="1" fill="#00ff46" opacity=".8"/>
-  <path d="M110 38 L48 4 L40 8 L80 38Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".9"/>
-  <path d="M110 52 L48 86 L40 82 L80 52Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".9"/>
-  <ellipse cx="80" cy="8" rx="11" ry="3.5" fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width=".9"/>
-  <ellipse cx="60" cy="3" rx="10" ry="3" fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width=".9"/>
-  <ellipse cx="80" cy="82" rx="11" ry="3.5" fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width=".9"/>
-  <ellipse cx="60" cy="87" rx="10" ry="3" fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width=".9"/>
-  <path d="M24 38 L9 25 L6 28 L18 38Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".8"/>
-  <path d="M24 52 L9 65 L6 62 L18 52Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".8"/>
-  <path d="M16 38 L10 16 L14 16 L24 38Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".8"/>
+
+b747:`<svg viewBox="0 0 290 110" xmlns="http://www.w3.org/2000/svg">
+  <!-- B747 — fusoliera con upper deck hump -->
+  <!-- Fusoliera principale -->
+  <path d="M 44 48 Q 68 43 100 42 L 226 42 Q 248 42 258 51 Q 248 60 226 60
+           L 100 60 Q 68 59 44 54 Q 32 52 28 51 Q 32 50 44 48 Z"
+        fill="rgba(0,255,70,.1)" stroke="#00ff46" stroke-width="1.2"/>
+  <!-- Upper deck hump (caratteristica 747) -->
+  <path d="M 160 42 Q 175 35 202 34 Q 220 34 232 38 L 232 42 Z"
+        fill="rgba(0,255,70,.08)" stroke="#00ff46" stroke-width="1"/>
+  <!-- Cockpit -->
+  <path d="M 228 44 L 250 50 L 250 53 L 228 58 Z"
+        fill="rgba(0,255,70,.07)" stroke="#00ff46" stroke-width=".8" opacity=".7"/>
+  <!-- Ali con sweep pronunciato -->
+  <path d="M 138 59 L 88 96 Q 82 100 80 97 L 118 59 Z"
+        fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width="1"/>
+  <path d="M 138 42 L 88 5 Q 82 1 80 4 L 118 42 Z"
+        fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width="1"/>
+  <!-- 4 motori (caratteristica 747) -->
+  <ellipse cx="116" cy="102" rx="15" ry="4.5"
+           fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width=".9"/>
+  <ellipse cx="100" cy="99" rx="13" ry="4"
+           fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width=".9"/>
+  <ellipse cx="116" cy="-1" rx="15" ry="4.5"
+           fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width=".9"/>
+  <ellipse cx="100" cy="2" rx="13" ry="4"
+           fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width=".9"/>
+  <!-- Deriva e stab -->
+  <path d="M 50 42 L 30 6 L 38 5 L 55 42 Z"
+        fill="rgba(0,255,70,.2)" stroke="#00ff46" stroke-width="1"/>
+  <path d="M 44 48 L 18 37 L 16 39 L 38 48 Z"
+        fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".9"/>
+  <path d="M 44 54 L 18 65 L 16 63 L 38 54 Z"
+        fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".9"/>
 </svg>`,
-b747:`<svg viewBox="0 0 220 92" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <path d="M16 46 L160 46 Q177 46 186 41 L194 37 Q190 32 186 32 L160 33 L16 33 Q6 33 4 39 Q6 46 16 46Z" fill="rgba(0,255,70,.09)" stroke="#00ff46" stroke-width="1.1"/>
-  <path d="M152 33 Q168 33 174 28 Q170 23 160 23 L148 23 Q140 23 140 28 Q142 33 152 33Z" fill="rgba(0,255,70,.07)" stroke="#00ff46" stroke-width=".9"/>
-  <path d="M186 32 Q200 35 202 38 Q200 41 186 41Z" fill="#00ff46" opacity=".45"/>
-  <rect x="178" y="33" width="6" height="3" rx="1" fill="#00ff46" opacity=".8"/>
-  <path d="M105 33 L50 5 L42 8 L80 33Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".9"/>
-  <path d="M105 46 L50 74 L42 71 L80 46Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".9"/>
-  <ellipse cx="78" cy="8" rx="10" ry="3.2" fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width=".9"/>
-  <ellipse cx="60" cy="4" rx="9" ry="3" fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width=".9"/>
-  <ellipse cx="78" cy="71" rx="10" ry="3.2" fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width=".9"/>
-  <ellipse cx="60" cy="75" rx="9" ry="3" fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width=".9"/>
-  <path d="M24 33 L8 18 L5 21 L18 33Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".8"/>
-  <path d="M24 46 L8 61 L5 58 L18 46Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".8"/>
-  <path d="M17 33 L10 12 L14 12 L24 33Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".8"/>
+
+a380:`<svg viewBox="0 0 290 120" xmlns="http://www.w3.org/2000/svg">
+  <!-- A380 — fusoliera enorme double deck -->
+  <!-- Fusoliera lower deck -->
+  <path d="M 42 55 Q 66 49 100 48 L 224 48 Q 246 48 256 58 Q 246 68 224 68
+           L 100 68 Q 66 67 42 61 Q 30 59 26 58 Q 30 57 42 55 Z"
+        fill="rgba(0,255,70,.1)" stroke="#00ff46" stroke-width="1.3"/>
+  <!-- Upper deck (più lungo e basso del 747, caratteristica A380) -->
+  <path d="M 70 48 Q 80 40 110 39 L 224 39 Q 238 39 244 44 L 244 48 Z"
+        fill="rgba(0,255,70,.07)" stroke="#00ff46" stroke-width=".9"/>
+  <!-- Cockpit -->
+  <path d="M 226 50 L 248 58 L 248 61 L 226 66 Z"
+        fill="rgba(0,255,70,.07)" stroke="#00ff46" stroke-width=".8" opacity=".7"/>
+  <!-- Ali enormi con forte sweep -->
+  <path d="M 136 67 L 78 105 Q 72 109 70 106 L 112 67 Z"
+        fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width="1.1"/>
+  <path d="M 136 49 L 78 11 Q 72 7 70 10 L 112 49 Z"
+        fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width="1.1"/>
+  <!-- 4 motori grandi -->
+  <ellipse cx="110" cy="112" rx="18" ry="5"
+           fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width="1"/>
+  <ellipse cx="90" cy="108" rx="15" ry="4.5"
+           fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width="1"/>
+  <ellipse cx="110" cy="4" rx="18" ry="5"
+           fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width="1"/>
+  <ellipse cx="90" cy="8" rx="15" ry="4.5"
+           fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width="1"/>
+  <!-- Deriva bassa (caratteristica A380) e stab -->
+  <path d="M 48 48 L 30 12 L 38 11 L 53 48 Z"
+        fill="rgba(0,255,70,.2)" stroke="#00ff46" stroke-width="1"/>
+  <path d="M 42 55 L 16 43 L 14 45 L 36 55 Z"
+        fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".9"/>
+  <path d="M 42 61 L 16 73 L 14 71 L 36 61 Z"
+        fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".9"/>
 </svg>`,
-heli:`<svg viewBox="0 0 220 90" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <line x1="85" y1="20" x2="165" y2="20" stroke="#00ff46" stroke-width="1.6"/>
-  <line x1="125" y1="8" x2="125" y2="32" stroke="#00ff46" stroke-width="1.6"/>
-  <circle cx="125" cy="20" r="4" fill="rgba(0,255,70,.2)" stroke="#00ff46" stroke-width="1.2"/>
-  <path d="M80 48 Q88 30 110 26 Q130 22 148 28 Q165 34 168 44 Q165 58 148 62 L90 62 Q80 60 78 52Z" fill="rgba(0,255,70,.1)" stroke="#00ff46" stroke-width="1.1"/>
-  <path d="M145 28 Q165 34 168 44 Q165 52 148 58 L145 28Z" fill="rgba(0,255,70,.06)" stroke="#00ff46" stroke-width=".8"/>
-  <path d="M82 52 L32 50 Q22 50 18 47 Q22 44 32 44 L82 48Z" fill="rgba(0,255,70,.06)" stroke="#00ff46" stroke-width=".9"/>
-  <line x1="18" y1="40" x2="18" y2="54" stroke="#00ff46" stroke-width="1.4"/>
-  <circle cx="18" cy="47" r="3" fill="rgba(0,255,70,.2)" stroke="#00ff46" stroke-width="1"/>
-  <line x1="100" y1="62" x2="100" y2="72" stroke="#00ff46" stroke-width="1.2"/>
-  <line x1="130" y1="62" x2="130" y2="72" stroke="#00ff46" stroke-width="1.2"/>
-  <line x1="88" y1="72" x2="144" y2="72" stroke="#00ff46" stroke-width="1.2"/>
+
+rj:`<svg viewBox="0 0 240 90" xmlns="http://www.w3.org/2000/svg">
+  <!-- Regional jet — E190/CRJ style, più corto e snello -->
+  <path d="M 40 38 Q 60 34 86 33 L 196 33 Q 213 33 221 40 Q 213 47 196 47
+           L 86 47 Q 60 46 40 42 Q 30 41 27 40 Q 30 39 40 38 Z"
+        fill="rgba(0,255,70,.11)" stroke="#00ff46" stroke-width="1.1"/>
+  <path d="M 198 35 L 215 40 L 215 42 L 198 45 Z"
+        fill="rgba(0,255,70,.07)" stroke="#00ff46" stroke-width=".7" opacity=".7"/>
+  <!-- Ali più corte -->
+  <path d="M 120 46 L 92 72 Q 87 75 85 73 L 108 46 Z"
+        fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".9"/>
+  <path d="M 120 34 L 92 8 Q 87 5 85 7 L 108 34 Z"
+        fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".9"/>
+  <!-- 2 motori wing-mounted -->
+  <ellipse cx="100" cy="78" rx="13" ry="4"
+           fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width=".9"/>
+  <ellipse cx="100" cy="2" rx="13" ry="4"
+           fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width=".9"/>
+  <!-- Deriva e stab più piccoli -->
+  <path d="M 46 34 L 32 8 L 38 7 L 50 34 Z"
+        fill="rgba(0,255,70,.2)" stroke="#00ff46" stroke-width=".9"/>
+  <path d="M 40 38 L 20 30 L 18 32 L 34 38 Z"
+        fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".8"/>
+  <path d="M 40 42 L 20 50 L 18 48 L 34 42 Z"
+        fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".8"/>
 </svg>`,
-biz:`<svg viewBox="0 0 220 78" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <path d="M22 38 L172 38 Q188 38 196 33 L202 29 L196 26 Q188 23 172 24 L22 24 Q12 24 10 31 Q12 38 22 38Z" fill="rgba(0,255,70,.1)" stroke="#00ff46" stroke-width="1.1"/>
-  <path d="M196 26 Q208 28 210 31 Q208 33 196 33Z" fill="#00ff46" opacity=".55"/>
-  <rect x="186" y="26.5" width="7" height="2.5" rx="1" fill="#00ff46" opacity=".85"/>
-  <path d="M118 24 L74 6 L68 9 L102 24Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".9"/>
-  <path d="M118 38 L74 56 L68 53 L102 38Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".9"/>
-  <path d="M68 9 L62 1 L65 5Z" fill="#00ff46" opacity=".55"/>
-  <path d="M68 53 L62 61 L65 57Z" fill="#00ff46" opacity=".55"/>
-  <ellipse cx="90" cy="9" rx="9" ry="2.8" fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width=".9"/>
-  <ellipse cx="90" cy="53" rx="9" ry="2.8" fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width=".9"/>
-  <path d="M32 24 L16 14 L13 17 L26 24Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".8"/>
-  <path d="M32 38 L16 48 L13 45 L26 38Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".8"/>
-  <path d="M24 24 L17 6 L21 6 L32 24Z" fill="rgba(0,255,70,.18)" stroke="#00ff46" stroke-width=".8"/>
+
+biz:`<svg viewBox="0 0 260 80" xmlns="http://www.w3.org/2000/svg">
+  <!-- Business jet — Gulfstream style, snello con sweep estremo -->
+  <path d="M 40 34 Q 64 30 96 29 L 208 29 Q 226 29 234 36 Q 226 43 208 43
+           L 96 43 Q 64 42 40 38 Q 30 37 27 36 Q 30 35 40 34 Z"
+        fill="rgba(0,255,70,.11)" stroke="#00ff46" stroke-width="1.1"/>
+  <path d="M 210 31 L 228 36 L 228 38 L 210 41 Z"
+        fill="rgba(0,255,70,.07)" stroke="#00ff46" stroke-width=".7" opacity=".7"/>
+  <!-- Ali con sweep estremo (Gulfstream) -->
+  <path d="M 126 43 L 88 68 Q 82 71 80 69 L 112 43 Z"
+        fill="rgba(0,255,70,.2)" stroke="#00ff46" stroke-width="1"/>
+  <path d="M 126 29 L 88 4 Q 82 1 80 3 L 112 29 Z"
+        fill="rgba(0,255,70,.2)" stroke="#00ff46" stroke-width="1"/>
+  <!-- Winglet alto -->
+  <path d="M 80 69 L 74 63 L 80 61 Z" fill="#00ff46" opacity=".7"/>
+  <path d="M 80 3 L 74 9 L 80 11 Z" fill="#00ff46" opacity=".7"/>
+  <!-- Motori in coda (tipico biz jet) -->
+  <ellipse cx="52" cy="26" rx="14" ry="3.5"
+           fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width=".9"/>
+  <ellipse cx="52" cy="46" rx="14" ry="3.5"
+           fill="rgba(0,255,70,.12)" stroke="#00ff46" stroke-width=".9"/>
+  <!-- T-tail deriva alta -->
+  <path d="M 44 29 L 28 4 L 35 3 L 48 29 Z"
+        fill="rgba(0,255,70,.2)" stroke="#00ff46" stroke-width="1"/>
+  <!-- Piano orizzontale in cima alla deriva (T-tail) -->
+  <path d="M 28 4 L 12 4 L 12 7 L 28 7 Z"
+        fill="rgba(0,255,70,.2)" stroke="#00ff46" stroke-width=".9"/>
+  <path d="M 35 4 L 50 4 L 50 7 L 35 7 Z"
+        fill="rgba(0,255,70,.2)" stroke="#00ff46" stroke-width=".9"/>
 </svg>`,
-mil:`<svg viewBox="0 0 220 88" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <path d="M16 46 L155 46 Q168 46 175 41 L182 37 Q178 32 175 32 L155 33 L16 34 Q7 34 5 40 Q7 46 16 46Z" fill="rgba(0,255,70,.08)" stroke="#00ff46" stroke-width="1.1" stroke-dasharray="5,2"/>
-  <path d="M175 32 Q188 35 190 38 Q188 41 175 41Z" fill="#00ff46" opacity=".35"/>
-  <path d="M100 33 L50 7 L44 10 L82 33Z" fill="rgba(0,255,70,.15)" stroke="#00ff46" stroke-width=".9" stroke-dasharray="4,2"/>
-  <path d="M100 34 L50 60 L44 57 L82 34Z" fill="rgba(0,255,70,.15)" stroke="#00ff46" stroke-width=".9" stroke-dasharray="4,2"/>
-  <ellipse cx="78" cy="10" rx="9" ry="2.8" fill="rgba(0,255,70,.1)" stroke="#00ff46" stroke-width=".8" stroke-dasharray="3,2"/>
-  <ellipse cx="60" cy="6" rx="8" ry="2.5" fill="rgba(0,255,70,.1)" stroke="#00ff46" stroke-width=".8" stroke-dasharray="3,2"/>
-  <ellipse cx="78" cy="57" rx="9" ry="2.8" fill="rgba(0,255,70,.1)" stroke="#00ff46" stroke-width=".8" stroke-dasharray="3,2"/>
-  <ellipse cx="60" cy="61" rx="8" ry="2.5" fill="rgba(0,255,70,.1)" stroke="#00ff46" stroke-width=".8" stroke-dasharray="3,2"/>
-  <path d="M24 33 L9 20 L6 23 L18 33Z" fill="rgba(0,255,70,.15)" stroke="#00ff46" stroke-width=".8"/>
-  <path d="M24 46 L9 59 L6 56 L18 46Z" fill="rgba(0,255,70,.15)" stroke="#00ff46" stroke-width=".8"/>
-  <path d="M17 33 L10 13 L14 13 L24 33Z" fill="rgba(0,255,70,.15)" stroke="#00ff46" stroke-width=".8"/>
+
+heli:`<svg viewBox="0 0 260 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- Elicottero — side view -->
+  <!-- Corpo principale -->
+  <path d="M 80 40 Q 90 30 120 28 Q 160 26 185 34 Q 200 40 200 50
+           Q 200 62 185 68 Q 160 74 120 72 Q 90 70 80 60 Q 72 55 72 50 Q 72 45 80 40 Z"
+        fill="rgba(0,255,70,.1)" stroke="#00ff46" stroke-width="1.1"/>
+  <!-- Vetro cockpit -->
+  <path d="M 168 36 Q 194 40 200 50 Q 194 62 168 66 L 168 36 Z"
+        fill="rgba(0,255,70,.06)" stroke="#00ff46" stroke-width=".8"/>
+  <line x1="178" y1="36" x2="178" y2="66" stroke="#00ff46" stroke-width=".5" opacity=".5"/>
+  <!-- Boom coda -->
+  <path d="M 82 47 L 24 44 Q 16 44 14 47 Q 16 50 24 50 L 82 53 Z"
+        fill="rgba(0,255,70,.07)" stroke="#00ff46" stroke-width=".9"/>
+  <!-- Rotore di coda -->
+  <line x1="14" y1="38" x2="14" y2="56" stroke="#00ff46" stroke-width="1.8"/>
+  <line x1="8" y1="47" x2="20" y2="47" stroke="#00ff46" stroke-width="1.8"/>
+  <circle cx="14" cy="47" r="3" fill="rgba(0,255,70,.3)" stroke="#00ff46" stroke-width="1"/>
+  <!-- Asse rotore principale -->
+  <line x1="140" y1="28" x2="140" y2="18" stroke="#00ff46" stroke-width="1.5"/>
+  <!-- Pale rotore principale -->
+  <path d="M 60 16 L 220 16" stroke="#00ff46" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M 140 4 L 140 28" stroke="#00ff46" stroke-width="2.5" stroke-linecap="round"/>
+  <circle cx="140" cy="16" r="5" fill="rgba(0,255,70,.3)" stroke="#00ff46" stroke-width="1.2"/>
+  <!-- Pattini carrello -->
+  <line x1="100" y1="74" x2="100" y2="84" stroke="#00ff46" stroke-width="1.2"/>
+  <line x1="160" y1="74" x2="160" y2="84" stroke="#00ff46" stroke-width="1.2"/>
+  <line x1="86" y1="84" x2="174" y2="84" stroke="#00ff46" stroke-width="1.5"/>
+</svg>`,
+
+mil:`<svg viewBox="0 0 280 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- C-130/A400M cargo militare — ala alta, 4 motori -->
+  <!-- Fusoliera tozza e massiccia -->
+  <path d="M 40 44 Q 60 40 90 39 L 218 39 Q 234 39 240 47 Q 234 56 218 56
+           L 90 56 Q 60 55 40 51 Q 30 49 27 48 Q 30 47 40 44 Z"
+        fill="rgba(0,255,70,.1)" stroke="#00ff46" stroke-width="1.2" stroke-dasharray="6,2"/>
+  <!-- Naso più squadrato -->
+  <path d="M 220 41 L 238 47 L 238 50 L 220 54 Z"
+        fill="rgba(0,255,70,.07)" stroke="#00ff46" stroke-width=".8"/>
+  <!-- Ala ALTA (la differenza principale dai civili) -->
+  <path d="M 130 39 L 94 10 Q 90 7 88 9 L 118 39 Z"
+        fill="rgba(0,255,70,.15)" stroke="#00ff46" stroke-width="1" stroke-dasharray="5,2"/>
+  <path d="M 130 56 L 94 85 Q 90 88 88 86 L 118 56 Z"
+        fill="rgba(0,255,70,.15)" stroke="#00ff46" stroke-width="1" stroke-dasharray="5,2"/>
+  <!-- 4 turboeliche -->
+  <ellipse cx="108" cy="6" rx="14" ry="4" fill="rgba(0,255,70,.1)" stroke="#00ff46" stroke-width=".8" stroke-dasharray="3,2"/>
+  <ellipse cx="92" cy="3" rx="12" ry="3.5" fill="rgba(0,255,70,.1)" stroke="#00ff46" stroke-width=".8" stroke-dasharray="3,2"/>
+  <ellipse cx="108" cy="89" rx="14" ry="4" fill="rgba(0,255,70,.1)" stroke="#00ff46" stroke-width=".8" stroke-dasharray="3,2"/>
+  <ellipse cx="92" cy="92" rx="12" ry="3.5" fill="rgba(0,255,70,.1)" stroke="#00ff46" stroke-width=".8" stroke-dasharray="3,2"/>
+  <!-- Deriva e stab -->
+  <path d="M 46 39 L 28 8 L 36 7 L 51 39 Z"
+        fill="rgba(0,255,70,.15)" stroke="#00ff46" stroke-width=".9" stroke-dasharray="4,2"/>
+  <path d="M 40 44 L 16 34 L 14 36 L 34 44 Z"
+        fill="rgba(0,255,70,.15)" stroke="#00ff46" stroke-width=".8" stroke-dasharray="4,2"/>
+  <path d="M 40 51 L 16 61 L 14 59 L 34 51 Z"
+        fill="rgba(0,255,70,.15)" stroke="#00ff46" stroke-width=".8" stroke-dasharray="4,2"/>
 </svg>`
 };
 
 function getSil(t){
-  const map={heli:'heli',a380:'a380',b747:'b747',wb:'wb',biz:'biz',mil:'mil',nb:'nb'};
-  return SIL[map[acCat(t)]]||SIL.nb;
+  const map={heli:'heli',a380:'a380',b747:'b747',wb:'wb',rj:'rj',biz:'biz',mil:'mil',nb:'nb'};
+  const key=map[acCat(t)]||'nb';
+  return SIL[key];
 }
 
-/* ── CANVAS ── */
+// ─── AUDIO ────────────────────────────────
+let audioCtx=null,audioOn=false,beepTimer=null;
+function initAudio(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();}
+function beep(){
+  if(!audioCtx||!audioOn)return;
+  const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+  o.connect(g);g.connect(audioCtx.destination);
+  o.frequency.value=920;o.type='sine';
+  g.gain.setValueAtTime(0,audioCtx.currentTime);
+  g.gain.linearRampToValueAtTime(0.22,audioCtx.currentTime+0.01);
+  g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.09);
+  o.start(audioCtx.currentTime);o.stop(audioCtx.currentTime+0.1);
+}
+function scheduleBeep(){
+  if(!audioOn)return;
+  beep();
+  let interval=4000;
+  if(S.ac.length>0&&S.lat!==null){
+    const d=haversine(S.lat,S.lon,S.ac[0].lat||S.lat,S.ac[0].lon||S.lon);
+    const t=Math.max(0,Math.min(1,(d-3)/(S.radius-3)));
+    interval=280+t*3720;
+  }
+  beepTimer=setTimeout(scheduleBeep,interval);
+}
+function toggleAudio(){
+  initAudio();
+  audioOn=!audioOn;
+  document.getElementById('audiobtn').textContent=audioOn?'🔊':'🔇';
+  if(audioOn)scheduleBeep();
+  else clearTimeout(beepTimer);
+}
+
+// ─── CANVAS ───────────────────────────────
 const canvas=document.getElementById('rc');
 const ctx=canvas.getContext('2d');
-let rafId=null,CX,CY,RPX;
+let rafId=null,CX,CY,RPX,SIZE_CSS;
 
 function setupCanvas(){
   const wrap=document.getElementById('radar-wrap');
   const avW=wrap.clientWidth-16;
   const avH=Math.floor(window.innerHeight*0.44);
-  const SZ=Math.min(avW,avH,400);
-  canvas.width=SZ;canvas.height=SZ;
-  canvas.style.width=SZ+'px';canvas.style.height=SZ+'px';
-  CX=SZ/2;CY=SZ/2;RPX=SZ/2-6;
+  SIZE_CSS=Math.min(avW,avH,420);
+  S.dpr=window.devicePixelRatio||1;
+  canvas.width=Math.round(SIZE_CSS*S.dpr);
+  canvas.height=Math.round(SIZE_CSS*S.dpr);
+  canvas.style.width=SIZE_CSS+'px';
+  canvas.style.height=SIZE_CSS+'px';
+  ctx.scale(S.dpr,S.dpr);
+  CX=SIZE_CSS/2;CY=SIZE_CSS/2;RPX=SIZE_CSS/2-8;
 }
 
 function drawRadar(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const SZ=SIZE_CSS;
+  ctx.clearRect(0,0,SZ,SZ);
   const bg=ctx.createRadialGradient(CX,CY,0,CX,CY,RPX);
-  bg.addColorStop(0,'#0e200e');bg.addColorStop(0.7,'#071207');bg.addColorStop(1,'#030a03');
+  bg.addColorStop(0,'#0f220f');bg.addColorStop(0.65,'#081408');bg.addColorStop(1,'#030a03');
   ctx.beginPath();ctx.arc(CX,CY,RPX,0,Math.PI*2);ctx.fillStyle=bg;ctx.fill();
 
   [.25,.5,.75,1].forEach((f,i)=>{
     ctx.beginPath();ctx.arc(CX,CY,RPX*f,0,Math.PI*2);
-    ctx.strokeStyle=`rgba(0,255,70,${i===3?.28:.1})`;ctx.lineWidth=1;ctx.stroke();
+    ctx.strokeStyle=`rgba(0,255,70,${i===3?.3:.1})`;ctx.lineWidth=i===3?1.5:1;ctx.stroke();
     if(i<3){
-      const d=Math.round(S.radius*f),fs=Math.max(8,canvas.width/48);
-      ctx.fillStyle='rgba(0,255,70,.3)';ctx.font=`${fs}px 'Courier New'`;
-      ctx.textAlign='left';
-      ctx.fillText(d+'km',CX+RPX*f*0.695+1,CY-RPX*f*0.695-2);
+      const d=Math.round(S.radius*f),fs=Math.max(8,SZ/46);
+      const ang=-Math.PI/4;
+      ctx.fillStyle='rgba(0,255,70,.32)';ctx.font=`bold ${fs}px 'Courier New'`;ctx.textAlign='left';
+      ctx.fillText(d+'km',CX+RPX*f*Math.cos(ang)+1,CY+RPX*f*Math.sin(ang)-2);
     }
   });
 
   ctx.strokeStyle='rgba(0,255,70,.09)';ctx.lineWidth=1;
   ctx.beginPath();ctx.moveTo(CX,CY-RPX);ctx.lineTo(CX,CY+RPX);ctx.stroke();
   ctx.beginPath();ctx.moveTo(CX-RPX,CY);ctx.lineTo(CX+RPX,CY);ctx.stroke();
-  const fc=Math.max(9,canvas.width/34);
-  ctx.fillStyle='rgba(0,255,70,.45)';ctx.font=`bold ${fc}px 'Courier New'`;
+  const fc=Math.max(10,SZ/32);
+  ctx.fillStyle='rgba(0,255,70,.5)';ctx.font=`bold ${fc}px 'Courier New'`;
   ctx.textAlign='center';
   ctx.fillText('N',CX,CY-RPX+fc+1);ctx.fillText('S',CX,CY+RPX-3);
-  ctx.textAlign='left';ctx.fillText('E',CX+RPX-fc-2,CY+4);ctx.fillText('O',CX-RPX+4,CY+4);
+  ctx.textAlign='left';ctx.fillText('E',CX+RPX-fc-2,CY+5);ctx.fillText('O',CX-RPX+4,CY+5);
 
-  /* sweep */
+  // sweep
   ctx.save();ctx.translate(CX,CY);ctx.rotate(S.sweep);
-  for(let i=8;i>=0;i--){
-    ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,RPX,0,-0.55*i/8,false);ctx.closePath();
-    ctx.fillStyle=`rgba(0,255,70,${0.004*(8-i)})`;ctx.fill();
+  for(let i=9;i>=0;i--){
+    ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,RPX,0,-0.55*i/9,false);ctx.closePath();
+    ctx.fillStyle=`rgba(0,255,70,${0.0038*(9-i)})`;ctx.fill();
   }
   ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(RPX,0);
-  ctx.strokeStyle='rgba(0,255,70,.88)';ctx.lineWidth=1.5;ctx.stroke();
-  ctx.beginPath();ctx.arc(RPX,0,2.5,0,Math.PI*2);ctx.fillStyle='#00ff46';ctx.fill();
+  ctx.strokeStyle='rgba(0,255,70,.9)';ctx.lineWidth=1.5;ctx.stroke();
+  ctx.beginPath();ctx.arc(RPX,0,3,0,Math.PI*2);ctx.fillStyle='#00ff46';ctx.fill();
   ctx.restore();
-  S.sweep+=0.022;
+  S.sweep+=0.02;
 
-  /* blips */
+  // blips
   S.blips=[];
   if(S.lat!==null){
     S.ac.forEach((ac,idx)=>{
@@ -305,54 +606,53 @@ function drawRadar(){
       const dist=haversine(S.lat,S.lon,ac.lat,ac.lon);
       if(dist>S.radius)return;
       const bear=bearingTo(S.lat,S.lon,ac.lat,ac.lon);
-      const scale=(dist/S.radius)*(RPX-10);
+      const scale=(dist/S.radius)*(RPX-12);
       const bx=CX+Math.sin(bear*Math.PI/180)*scale;
       const by=CY-Math.cos(bear*Math.PI/180)*scale;
       const sel=idx===S.selIdx;
 
       if(sel){
-        for(const r of[14,9]){
+        for(const r of[16,10]){
           ctx.beginPath();ctx.arc(bx,by,r,0,Math.PI*2);
-          ctx.strokeStyle=`rgba(0,255,70,${r===14?.1:.25})`;ctx.lineWidth=1;ctx.stroke();
+          ctx.strokeStyle=`rgba(0,255,70,${r===16?.1:.28})`;ctx.lineWidth=1;ctx.stroke();
         }
       }
-      const bR=sel?6:4;
+      const bR=sel?7:4.5;
       ctx.beginPath();ctx.arc(bx,by,bR,0,Math.PI*2);
-      ctx.fillStyle=sel?'#00ff46':'rgba(0,255,70,.6)';
+      ctx.fillStyle=sel?'#00ff46':'rgba(0,255,70,.65)';
       if(sel){ctx.shadowColor='#00ff46';ctx.shadowBlur=10;}
       ctx.fill();ctx.shadowBlur=0;
 
       if(ac.track!=null){
-        const aLen=sel?14:9,aRad=ac.track*Math.PI/180;
+        const aLen=sel?16:10,aRad=ac.track*Math.PI/180;
         const ax=bx+Math.sin(aRad)*aLen,ay=by-Math.cos(aRad)*aLen;
         ctx.beginPath();ctx.moveTo(bx,by);ctx.lineTo(ax,ay);
-        ctx.strokeStyle=sel?'rgba(0,255,70,.9)':'rgba(0,255,70,.35)';
-        ctx.lineWidth=sel?1.5:1;ctx.stroke();
-        const p=4,pa=0.45;
+        ctx.strokeStyle=sel?'rgba(0,255,70,.95)':'rgba(0,255,70,.4)';
+        ctx.lineWidth=sel?1.8:1.1;ctx.stroke();
+        const p=5,pa=0.44;
         ctx.beginPath();ctx.moveTo(ax,ay);
         ctx.lineTo(ax-Math.sin(aRad-pa)*p,ay+Math.cos(aRad-pa)*p);
         ctx.lineTo(ax-Math.sin(aRad+pa)*p,ay+Math.cos(aRad+pa)*p);
-        ctx.closePath();ctx.fillStyle=sel?'rgba(0,255,70,.9)':'rgba(0,255,70,.35)';ctx.fill();
+        ctx.closePath();ctx.fillStyle=sel?'rgba(0,255,70,.95)':'rgba(0,255,70,.4)';ctx.fill();
       }
-
-      const fn=Math.max(8,canvas.width/42);
-      ctx.fillStyle=sel?'#00ff46':'rgba(0,255,70,.75)';
+      const fn=Math.max(9,SZ/40);
+      ctx.fillStyle=sel?'#00ff46':'rgba(0,255,70,.8)';
       ctx.font=`bold ${fn}px 'Courier New'`;ctx.textAlign='left';
       ctx.fillText(idx+1,bx+bR+2,by-bR);
       S.blips.push({x:bx,y:by,idx});
     });
   }
 
-  /* centro utente */
-  ctx.beginPath();ctx.arc(CX,CY,4,0,Math.PI*2);
-  ctx.fillStyle='#00ff46';ctx.shadowColor='#00ff46';ctx.shadowBlur=10;ctx.fill();ctx.shadowBlur=0;
-  ctx.beginPath();ctx.arc(CX,CY,9,0,Math.PI*2);
-  ctx.strokeStyle='rgba(0,255,70,.35)';ctx.lineWidth=1;ctx.stroke();
-  ctx.strokeStyle='rgba(0,0,0,.8)';ctx.lineWidth=1.5;
-  ctx.beginPath();ctx.moveTo(CX-3,CY);ctx.lineTo(CX+3,CY);ctx.stroke();
-  ctx.beginPath();ctx.moveTo(CX,CY-3);ctx.lineTo(CX,CY+3);ctx.stroke();
+  // centro
+  ctx.beginPath();ctx.arc(CX,CY,4.5,0,Math.PI*2);
+  ctx.fillStyle='#00ff46';ctx.shadowColor='#00ff46';ctx.shadowBlur=12;ctx.fill();ctx.shadowBlur=0;
+  ctx.beginPath();ctx.arc(CX,CY,11,0,Math.PI*2);
+  ctx.strokeStyle='rgba(0,255,70,.3)';ctx.lineWidth=1;ctx.stroke();
+  ctx.strokeStyle='rgba(0,0,0,.9)';ctx.lineWidth=1.8;
+  ctx.beginPath();ctx.moveTo(CX-3.5,CY);ctx.lineTo(CX+3.5,CY);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(CX,CY-3.5);ctx.lineTo(CX,CY+3.5);ctx.stroke();
   ctx.beginPath();ctx.arc(CX,CY,RPX,0,Math.PI*2);
-  ctx.strokeStyle='rgba(0,255,70,.3)';ctx.lineWidth=2;ctx.stroke();
+  ctx.strokeStyle='rgba(0,255,70,.32)';ctx.lineWidth=2;ctx.stroke();
 
   rafId=requestAnimationFrame(drawRadar);
 }
@@ -363,22 +663,19 @@ function onTap(e){
   let cx,cy;
   if(e.touches){cx=e.touches[0].clientX-rect.left;cy=e.touches[0].clientY-rect.top;}
   else{cx=e.clientX-rect.left;cy=e.clientY-rect.top;}
-  const sx=canvas.width/rect.width,sy=canvas.height/rect.height;
-  const px=cx*sx,py=cy*sy;
-  let best=null,bestD=30;
-  S.blips.forEach(b=>{const d=Math.hypot(b.x-px,b.y-py);if(d<bestD){bestD=d;best=b;}});
+  let best=null,bestD=32;
+  S.blips.forEach(b=>{const d=Math.hypot(b.x-cx,b.y-cy);if(d<bestD){bestD=d;best=b;}});
   if(best){S.selIdx=best.idx;renderPanel(S.ac[S.selIdx]);}
 }
 canvas.addEventListener('click',onTap);
 canvas.addEventListener('touchstart',onTap,{passive:false});
 
-/* ── FETCH ── */
+// ─── FETCH AIRCRAFT ───────────────────────
 async function fetchAC(){
   if(S.lat===null)return;
   const nm=Math.max(11,Math.ceil(S.radius/1.852));
-  const url=`https://api.airplanes.live/v2/point/${S.lat}/${S.lon}/${nm}`;
   try{
-    const r=await fetch(url,{signal:AbortSignal.timeout(8000)});
+    const r=await fetch(`https://api.airplanes.live/v2/point/${S.lat}/${S.lon}/${nm}`,{signal:AbortSignal.timeout(8000)});
     if(!r.ok)return;
     const data=await r.json();
     let ac=(data.ac||[]).filter(a=>a.lat&&a.lon);
@@ -394,7 +691,7 @@ async function fetchAC(){
       document.getElementById('nosig').style.display='none';
       document.getElementById('finfo').style.display='';
       renderPanel(ac[S.selIdx]);
-      ac.slice(0,12).forEach(a=>{if(a.hex)fetchHex(a.hex);});
+      ac.slice(0,10).forEach(a=>{if(a.hex){fetchHex(a.hex);fetchTimes(a.hex,(a.flight||'').trim());}});
     }
   }catch(e){console.warn('fetchAC:',e.message);}
 }
@@ -411,13 +708,37 @@ async function fetchHex(hex){
   }catch{}
 }
 
-/* ── PANEL ── */
+async function fetchTimes(hex,callsign){
+  if(S.timeCache[hex]!==undefined)return;
+  S.timeCache[hex]=null;
+  try{
+    const now=Math.floor(Date.now()/1000);
+    const begin=now-18000,end=now+3600;
+    const url=`https://opensky-network.org/api/flights/aircraft?icao24=${hex}&begin=${begin}&end=${end}`;
+    const r=await fetch(url,{signal:AbortSignal.timeout(6000)});
+    if(!r.ok)return;
+    const data=await r.json();
+    if(!data||!data.length)return;
+    const cs=callsign.replace(/\s/g,'').toUpperCase();
+    const fl=data.find(f=>(f.callsign||'').trim().replace(/\s/g,'').toUpperCase()===cs)||data[data.length-1];
+    S.timeCache[hex]={
+      depTime:fl.firstSeen?fmtTs(fl.firstSeen):null,
+      arrTime:fl.lastSeen&&fl.lastSeen>fl.firstSeen+1800?fmtTs(fl.lastSeen):null,
+      dep:fl.estDepartureAirport||null,
+      arr:fl.estArrivalAirport||null,
+    };
+    if(S.ac[S.selIdx]?.hex===hex)renderPanel(S.ac[S.selIdx]);
+  }catch{}
+}
+
+// ─── RENDER PANEL ─────────────────────────
 function renderPanel(ac){
   if(!ac)return;
   const hx=S.hexCache[ac.hex]||{};
+  const tm=S.timeCache[ac.hex]||{};
   const cs=(ac.flight||'').trim()||ac.hex||'—';
   const aln=airlineName(cs,ac.ownOp||hx.op);
-  const typ=(ac.t||hx.type||'').toUpperCase()||'—';
+  const typ=(ac.t||hx.type||'').toUpperCase()||'';
   const dist=S.lat?Math.round(haversine(S.lat,S.lon,ac.lat,ac.lon)):'—';
   const altFt=ac.alt_baro??ac.alt_geom;
   const altFtS=altFt!=null?Math.round(altFt).toLocaleString('it-IT'):'—';
@@ -429,19 +750,39 @@ function renderPanel(ac){
 
   let phase='—';
   if(altFt!=null){
-    if(altFt<800)phase='DECOLLO / ATTERRAGGIO';
-    else if(altFt<5000)phase=vr!=null&&vr>200?'SALITA INIZIALE':(vr!=null&&vr<-200?'AVVICINAMENTO':'TRANSIZIONE');
-    else if(vr!=null&&vr>400)phase='SALITA';
-    else if(vr!=null&&vr<-400)phase='DISCESA';
+    if(altFt<500)phase='A TERRA';
+    else if(altFt<3000)phase=vr!=null&&vr>200?'DECOLLO':(vr!=null&&vr<-200?'FINALE':'CIRCUITO');
+    else if(altFt<8000)phase=vr!=null&&vr>400?'SALITA INIZIALE':(vr!=null&&vr<-400?'AVVICINAMENTO':'TRANSIZIONE');
+    else if(vr!=null&&vr>500)phase='SALITA';
+    else if(vr!=null&&vr<-500)phase='DISCESA';
     else phase='CROCIERA';
   }
 
-  const orig=(ac.dep||ac.origin||'—').toUpperCase();
-  const dest=(ac.arr||ac.destination||'—').toUpperCase();
-  let sil=getSil(typ!=='—'?typ:null).replace('<svg ','<svg width="180" height="72" ');
+  // origine/dest: prima da airplanes.live, poi da opensky
+  const rawDep=(ac.dep||tm.dep||'').toUpperCase().replace(/[^A-Z]/g,'');
+  const rawArr=(ac.arr||tm.arr||'').toUpperCase().replace(/[^A-Z]/g,'');
+  const depInfo=apInfo(rawDep);
+  const arrInfo=apInfo(rawArr);
+  const depTime=tm.depTime||null;
+  const arrTime=tm.arrTime||null;
+
+  function apBlock(info,time,lbl,align='left'){
+    if(!info)return`<div class="ap" style="text-align:${align}">
+      <div class="ap-code" style="opacity:.3">—</div>
+      <div class="ap-lbl">${lbl}</div></div>`;
+    return`<div class="ap" style="text-align:${align}">
+      ${info.flag?`<div class="ap-flag">${info.flag}</div>`:''}
+      <div class="ap-code">${info.code}</div>
+      ${info.city?`<div class="ap-city">${info.city}</div>`:''}
+      ${time?`<div class="ap-time">${time}</div>`:''}
+      <div class="ap-lbl">${lbl}</div>
+    </div>`;
+  }
+
+  let sil=getSil(typ||null).replace('<svg ','<svg width="220" height="80" ');
 
   const vrStr=vr!=null
-    ?`<span style="color:${vr>50?'#00ff46':vr<-50?'#ff6b35':'#00ff46'}">${vr>50?'↑':vr<-50?'↓':'→'}${Math.abs(Math.round(vr))}</span>`
+    ?`<span style="color:${vr>80?'#00ff46':vr<-80?'#ff6b35':'#88ff88'}">${vr>80?'↑':vr<-80?'↓':'→'}${Math.abs(Math.round(vr))}</span>`
     :'—';
 
   document.getElementById('finfo').innerHTML=`
@@ -449,17 +790,11 @@ function renderPanel(ac){
     <div class="sil-wrap">${sil}</div>
     <div class="cs">${cs}</div>
     <div class="aname">${aln}</div>
-    <div class="atype">${typ!=='—'?typ:''}${hx.reg?' · '+hx.reg:''}</div>
+    <div class="atype">${typ||'—'}${hx.reg?' &nbsp;·&nbsp; '+hx.reg:''}</div>
     <div class="route">
-      <div class="ap">
-        <div class="ap-code">${orig}</div>
-        <div class="ap-lbl">PARTENZA</div>
-      </div>
+      ${apBlock(depInfo,depTime,'PARTENZA','left')}
       <div class="rarr">⟶</div>
-      <div class="ap" style="text-align:right">
-        <div class="ap-code">${dest}</div>
-        <div class="ap-lbl">ARRIVO</div>
-      </div>
+      ${apBlock(arrInfo,arrTime,'ARRIVO','right')}
     </div>
     <div class="sgrid">
       <div class="sbox"><div class="sv">${dist}</div><div class="sl">KM DA TE</div></div>
@@ -476,20 +811,20 @@ function renderPanel(ac){
   `;
 }
 
-/* ── SETTINGS ── */
+// ─── SETTINGS ─────────────────────────────
 document.getElementById('rslider').addEventListener('input',function(){
   S.radius=parseInt(this.value);
   document.getElementById('rval').textContent=S.radius+' KM';
   fetchAC();
 });
 
-/* ── CLOCK ── */
+// ─── CLOCK ────────────────────────────────
 setInterval(()=>{
   document.getElementById('hclock').textContent=
     new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
 },1000);
 
-/* ── INIT ── */
+// ─── INIT ─────────────────────────────────
 function startApp(lat,lon){
   S.lat=lat;S.lon=lon;
   document.getElementById('loading').classList.add('hidden');
@@ -507,17 +842,15 @@ navigator.geolocation.getCurrentPosition(
     document.getElementById('loading').innerHTML=
       '<div style="font-size:26px;color:#ff4444">⊗</div>'+
       '<div>GPS NON DISPONIBILE</div>'+
-      '<div style="font-size:9px;opacity:.4;letter-spacing:2px;margin-top:10px;text-align:center;max-width:260px">Controlla i permessi di geolocalizzazione nelle impostazioni del browser</div>';
+      '<div style="font-size:9px;opacity:.4;letter-spacing:2px;margin-top:10px;text-align:center;max-width:260px">Controlla i permessi di geolocalizzazione</div>';
   },
   {enableHighAccuracy:true,timeout:15000,maximumAge:30000}
 );
-
 navigator.geolocation.watchPosition(
   p=>{S.lat=p.coords.latitude;S.lon=p.coords.longitude;},
   ()=>{},{enableHighAccuracy:true}
 );
-
-window.addEventListener('resize',setupCanvas);
+window.addEventListener('resize',()=>{if(rafId)cancelAnimationFrame(rafId);setupCanvas();drawRadar();});
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>
