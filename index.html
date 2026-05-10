@@ -33,7 +33,7 @@
     #filterbar::-webkit-scrollbar{display:none;}
     .fbtn{font-size:9px;font-weight:bold;padding:3px 9px;border-width:1px;border-style:solid;cursor:pointer;letter-spacing:1px;white-space:nowrap;font-family:inherit;flex-shrink:0;}
     /* DISPLAY AREA */
-    #display-area{display:flex;justify-content:center;align-items:center;flex-shrink:0;padding:6px 8px 3px;position:relative;}
+    #display-area{display:flex;justify-content:center;align-items:center;flex-shrink:0;padding:6px 8px 3px;position:relative;min-height:130px;}
     #rc{cursor:crosshair;touch-action:none;display:block;}
     #leaflet-map{display:none;background:#030a03;overflow:hidden;border-width:1px;border-style:solid;}
     #leaflet-map .leaflet-tile-pane{filter:grayscale(1) sepia(1) hue-rotate(80deg) saturate(5) brightness(.45) contrast(1.3);}
@@ -82,14 +82,15 @@
 <div id="loading">
   <div class="spinner" id="lspinner"></div>
   <div id="ltxt">ACQUISIZIONE SEGNALE GPS...</div>
-  <div id="lver" style="font-size:9px;letter-spacing:3px;font-weight:bold;">SKYRADAR v2.4.1</div>
+  <div id="lver" style="font-size:9px;letter-spacing:3px;font-weight:bold;">SKYRADAR v2.4.2</div>
 </div>
 <div id="app" style="display:none">
   <div id="header">
-    <div class="hlogo"><div class="dot" id="hdot"></div><span>SKYRADAR</span><span class="hver" id="hv">v2.4.1</span></div>
+    <div class="hlogo"><div class="dot" id="hdot"></div><span>SKYRADAR</span><span class="hver" id="hv">v2.4.2</span></div>
     <div id="hclock">--:--:--</div>
     <button class="hbtn" id="themebtn" onclick="cycleTheme()">TEMA</button>
     <button class="hbtn" id="viewbtn" onclick="toggleView()">MAPPA</button>
+    <button class="hbtn" id="dbgbtn" onclick="toggleDebug()">DBG</button>
     <button class="hbtn" id="audiobtn" onclick="toggleAudio()">&#128263;</button>
     <div id="hcount">0 IN ZONA</div>
   </div>
@@ -114,7 +115,7 @@
 </div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-// SKYRADAR v2.4.1
+// SKYRADAR v2.4.2
 
 // ── TEMI ──────────────────────────────────────────────
 const THEMES={
@@ -157,7 +158,7 @@ function applyTheme(th){
   document.getElementById('hclock').style.color=T.gm;
   document.getElementById('hcount').style.color=T.g;
   // bottoni header
-  ['themebtn','viewbtn','audiobtn'].forEach(id=>{
+  ['themebtn','viewbtn','dbgbtn','audiobtn'].forEach(id=>{
     const b=document.getElementById(id);
     b.style.color=T.g;b.style.borderColor=T.gf;b.style.background='none';b.style.fontFamily=T.font;
   });
@@ -357,18 +358,19 @@ let rafId=null,CX,CY,RPX;
 function setupCanvas(){
   const wrap=document.getElementById('display-area');
   const avW=wrap.clientWidth-16,avH=Math.floor(window.innerHeight*0.43);
-  SZcss=Math.min(avW,avH,430);
+  SZcss=Math.max(120,Math.min(avW,avH,430));
   S.dpr=Math.min(window.devicePixelRatio||1,3);
   canvas.width=Math.round(SZcss*S.dpr);canvas.height=Math.round(SZcss*S.dpr);
   canvas.style.width=SZcss+'px';canvas.style.height=SZcss+'px';
   ctx.setTransform(1,0,0,1,0,0);ctx.scale(S.dpr,S.dpr);
-  CX=SZcss/2;CY=SZcss/2;RPX=SZcss/2-8;
+  CX=SZcss/2;CY=SZcss/2;RPX=Math.max(20,SZcss/2-8);
   if(map&&viewMode==='map'){const m=document.getElementById('leaflet-map');m.style.width=SZcss+'px';m.style.height=SZcss+'px';map.invalidateSize();}
 }
 
 function hex2rgb(hex){const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return{r,g,b};}
 
 function drawRadar(){
+  if(!SZcss||RPX<=0){rafId=requestAnimationFrame(drawRadar);return;}
   const SZ=SZcss,c=T.g,{r,g,b}=hex2rgb(T.g);
   const ga=`rgba(${r},${g},${b},`;
   ctx.clearRect(0,0,SZ,SZ);
@@ -475,13 +477,39 @@ async function fetchRoute(hex,callsign){
     const r=await fetch(url,{signal:AbortSignal.timeout(8000)});
     if(!r.ok)return;
     const data=await r.json();
-    if(!data||!data.length)return;
-    const cs=(callsign||'').trim().replace(/\s/g,'').toUpperCase();
-    const fl=data.find(f=>(f.callsign||'').trim().replace(/\s/g,'').toUpperCase()===cs)||data[data.length-1];
-    S.routeCache[hex]={dep:fl.estDepartureAirport||null,arr:fl.estArrivalAirport||null};
-    const sel=S.ac[S.selIdx];
-    if(sel?.hex===hex)renderPanel(sel);
-  }catch{}
+    if(data&&data.length){
+      const cs=(callsign||'').trim().replace(/\s/g,'').toUpperCase();
+      const fl=data.find(f=>(f.callsign||'').trim().replace(/\s/g,'').toUpperCase()===cs)||data[data.length-1];
+      if(fl.estDepartureAirport||fl.estArrivalAirport){
+        S.routeCache[hex]={dep:fl.estDepartureAirport||null,arr:fl.estArrivalAirport||null,src:'opensky'};
+        const sel=S.ac[S.selIdx];
+        if(sel?.hex===hex)renderPanel(sel);
+        return;
+      }
+    }
+  }catch(e){console.warn('OpenSky:',e.message);}
+  // Fallback: adsbdb (validazione: aereo deve essere lungo la rotta)
+  if(!callsign)return;
+  try{
+    const r=await fetch(`https://api.adsbdb.com/v0/callsign/${callsign}`,{signal:AbortSignal.timeout(6000)});
+    if(!r.ok)return;
+    const d=await r.json();
+    const fr=d?.response?.flightroute;
+    if(!fr||!fr.origin||!fr.destination)return;
+    const ac=S.ac.find(a=>a.hex===hex);
+    let ok=true;
+    if(ac&&fr.origin.latitude&&fr.destination.latitude){
+      const dOD=haversine(fr.origin.latitude,fr.origin.longitude,fr.destination.latitude,fr.destination.longitude);
+      const dOA=haversine(fr.origin.latitude,fr.origin.longitude,ac.lat,ac.lon);
+      const dDA=haversine(fr.destination.latitude,fr.destination.longitude,ac.lat,ac.lon);
+      if(dOD<10||(dOA+dDA)>(dOD*2.5))ok=false;
+    }
+    if(ok){
+      S.routeCache[hex]={dep:fr.origin.icao_code,arr:fr.destination.icao_code,src:'adsbdb'};
+      const sel=S.ac[S.selIdx];
+      if(sel?.hex===hex)renderPanel(sel);
+    }
+  }catch(e){console.warn('adsbdb:',e.message);}
 }
 async function fetchAirline(callsign){
   // adsbdb: solo nome compagnia (stabile per callsign prefix, non dipende dalla rotta)
@@ -668,6 +696,39 @@ function apLookup(code){
   return{icao:u,iata:u.length===3?u:null,city:'',country:''};
 }
 
+
+// ── DEBUG MODE ───────────────────────────────────────
+let debugOn=false;
+function toggleDebug(){
+  debugOn=!debugOn;
+  document.getElementById('dbgbtn').style.background=debugOn?T.g+'33':'none';
+  if(S.ac.length>0)renderPanel(S.ac[S.selIdx]);
+}
+function debugBox(ac){
+  if(!debugOn)return'';
+  const hx=S.hexCache[ac.hex]||{};
+  const csKey=(ac.flight||'').trim().replace(/\s/g,'');
+  const rt=S.routeCache[ac.hex]||{};
+  const al=S.airlineCache[csKey]||{};
+  const fields=Object.keys(ac).map(k=>{
+    let v=ac[k];
+    if(typeof v==='string'&&v.length>60)v=v.substring(0,60)+'...';
+    if(typeof v==='object'&&v!==null)v=JSON.stringify(v).substring(0,80);
+    return`<div><span style="color:${T.gm}">${k}:</span> <span style="color:${T.colW}">${v}</span></div>`;
+  }).join('');
+  return`<div style="border:1px dashed ${T.g};padding:8px;margin:8px 0;font-size:10px;line-height:1.5;background:rgba(0,0,0,.3);font-family:'Courier New',monospace;word-break:break-all;">
+    <div style="color:${T.g};font-weight:bold;margin-bottom:6px;">🔧 DEBUG — DATI RAW</div>
+    <div style="color:${T.g};font-size:9px;">— airplanes.live (ac):</div>
+    ${fields}
+    <div style="color:${T.g};font-size:9px;margin-top:6px;">— hexdb:</div>
+    <div style="color:${T.colW}">${JSON.stringify(hx)}</div>
+    <div style="color:${T.g};font-size:9px;margin-top:6px;">— route (src=${rt.src||'none'}):</div>
+    <div style="color:${T.colW}">${JSON.stringify(rt)}</div>
+    <div style="color:${T.g};font-size:9px;margin-top:6px;">— airline:</div>
+    <div style="color:${T.colW}">${JSON.stringify(al)}</div>
+  </div>`;
+}
+
 // ── RENDER PANEL ──────────────────────────────────────
 function extractData(ac){
   const hx=S.hexCache[ac.hex]||{};
@@ -721,7 +782,7 @@ function renderRadar(ac,d){
   const vrStr=d.vr!=null?`<span style="color:${d.vr>80?g:d.vr<-80?'#ff7040':'#aaffcc'}">${d.vr>80?'&#8593;':d.vr<-80?'&#8595;':'&#8594;'}${Math.abs(Math.round(d.vr))}</span>`:'—';
   document.getElementById('finfo').innerHTML=`
     ${d.total>1?`<div class="nav-hint" style="color:${gm}">&#9992; ${d.num}/${d.total} &middot; TAP PER SELEZIONARE</div>`:''}
-    <div style="font-size:clamp(30px,9vw,48px);font-weight:bold;letter-spacing:5px;text-align:center;text-shadow:0 0 20px ${g};line-height:1.1;color:${g}">${d.cs}</div>
+    ${debugBox(ac)}<div style="font-size:clamp(30px,9vw,48px);font-weight:bold;letter-spacing:5px;text-align:center;text-shadow:0 0 20px ${g};line-height:1.1;color:${g}">${d.cs}</div>
     ${d.aln?`<div style="text-align:center;font-size:13px;font-weight:bold;color:${cw};letter-spacing:2px;margin-top:4px">${d.aln}</div>`:''}
     <div style="text-align:center;font-size:12px;font-weight:bold;color:${gm};letter-spacing:2px;margin-top:2px;margin-bottom:10px">${d.typCode}${d.reg!=='—'?' &middot; '+d.reg:''}</div>
     <div class="acspecs" style="border-color:${gf}">
@@ -771,7 +832,7 @@ function renderFids(ac,d){
     </div>`;
   }).join('');
   document.getElementById('finfo').innerHTML=`
-    <div style="font-size:9px;letter-spacing:4px;color:${gm};border-bottom:1px solid ${gf};padding-bottom:6px;margin-bottom:10px;display:flex;justify-content:space-between;">${shareBtn()}<span>VOL SELEZIONATO</span><span>${d.num}/${d.total}</span></div>
+    ${debugBox(ac)}<div style="font-size:9px;letter-spacing:4px;color:${gm};border-bottom:1px solid ${gf};padding-bottom:6px;margin-bottom:10px;display:flex;justify-content:space-between;">${shareBtn()}<span>VOL SELEZIONATO</span><span>${d.num}/${d.total}</span></div>
     <div style="font-size:clamp(32px,10vw,54px);font-weight:bold;text-align:center;letter-spacing:8px;color:${g};text-shadow:0 0 24px ${g};margin-bottom:3px">${d.cs}</div>
     <div style="text-align:center;font-size:12px;letter-spacing:4px;color:${gm};margin-bottom:14px">${d.aln||'—'}</div>
     <div style="display:grid;grid-template-columns:1fr 2px 1fr;border:1px solid ${gf};margin-bottom:10px;">
@@ -815,7 +876,7 @@ function renderHud(ac,d){
   const vrStr=d.vr!=null?`<span style="color:${vrCol}">${d.vr>80?'&#8593;':d.vr<-80?'&#8595;':'&#8594;'}${Math.abs(Math.round(d.vr))}</span>`:'—';
   document.getElementById('finfo').innerHTML=`
     ${d.total>1?`<div class="nav-hint" style="color:${gm}">&#9992; ${d.num}/${d.total} &middot; TAP PER SELEZIONARE</div>`:''}
-    <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:12px;padding:12px;margin-bottom:10px;">
+    ${debugBox(ac)}<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:12px;padding:12px;margin-bottom:10px;">
       <div style="font-size:9px;color:${g};letter-spacing:2px;margin-bottom:8px;font-weight:600;display:flex;justify-content:space-between">${shareBtn()}<span>AEREO PIÙ VICINO</span><span style="opacity:.4">${d.typCode}</span></div>
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div>
