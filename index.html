@@ -261,7 +261,7 @@ let viewMode='radar',map=null,mapMarkers={},userMapMarker=null,radiusCircle=null
 function haversine(la1,lo1,la2,lo2){const R=6371,dLa=(la2-la1)*Math.PI/180,dLo=(lo2-lo1)*Math.PI/180;const a=Math.sin(dLa/2)**2+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLo/2)**2;return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
 function bearingTo(la1,lo1,la2,lo2){const dLo=(lo2-lo1)*Math.PI/180,y=Math.sin(dLo)*Math.cos(la2*Math.PI/180),x=Math.cos(la1*Math.PI/180)*Math.sin(la2*Math.PI/180)-Math.sin(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.cos(dLo);return(Math.atan2(y,x)*180/Math.PI+360)%360;}
 function hdgLabel(d){return["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSO","SO","OSO","O","ONO","NO","NNO"][Math.round(d/22.5)%16];}
-function flagImg(iso){if(!iso||iso.length<2)return'';return`<img src="https://flagcdn.com/20x15/${iso.toLowerCase()}.png" style="height:14px;display:block;margin-bottom:3px;" alt="${iso}" onerror="this.style.display='none'">`;};
+function flagImg(iso){if(!iso||iso.length<2)return'';return`<img src="https://flagcdn.com/20x15/${iso.toLowerCase()}.png" style="height:14px;display:inline-block;vertical-align:middle;" alt="${iso}" onerror="this.style.display='none'">`;};
 
 // ── AIRLINE / MFR ─────────────────────────────────────
 const AL={AZA:"ITA Airways",RYR:"Ryanair",EZY:"easyJet",VLG:"Vueling",IBE:"Iberia",BAW:"British Airways",DLH:"Lufthansa",AFR:"Air France",KLM:"KLM",THY:"Turkish Airlines",UAE:"Emirates",QTR:"Qatar Airways",ETD:"Etihad",SWR:"Swiss",AUA:"Austrian",TAP:"TAP Portugal",SAS:"SAS",NAX:"Norwegian",WZZ:"Wizz Air",TVS:"Transavia",AEE:"Aegean",VOE:"Volotea",EIN:"Aer Lingus",FIN:"Finnair",BEL:"Brussels Airlines",AAL:"American Airlines",UAL:"United Airlines",DAL:"Delta Air Lines",SWA:"Southwest",NOS:"Neos",TOM:"TUI Airways",MSR:"EgyptAir",SVA:"Saudia",ELY:"El Al",RAM:"Royal Air Maroc",GFA:"Gulf Air",PGT:"Pegasus Airlines",QFA:"Qantas",SIA:"Singapore Airlines",MAS:"Malaysia Airlines",THA:"Thai Airways",ANA:"ANA",JAL:"Japan Airlines",KAL:"Korean Air",AAR:"Asiana Airlines",AZ:"ITA Airways",FR:"Ryanair",U2:"easyJet",VY:"Vueling",IB:"Iberia",BA:"British Airways",LH:"Lufthansa",AF:"Air France",TK:"Turkish Airlines",EK:"Emirates",QR:"Qatar Airways",EY:"Etihad",LX:"Swiss",OS:"Austrian",TP:"TAP Portugal",SK:"SAS",DY:"Norwegian",W6:"Wizz Air",HV:"Transavia",A3:"Aegean",V7:"Volotea",EI:"Aer Lingus",AY:"Finnair",SN:"Brussels Airlines",AA:"American Airlines",UA:"United Airlines",DL:"Delta Air Lines",WN:"Southwest",NO:"Neos",PC:"Pegasus Airlines",MS:"EgyptAir",SV:"Saudia",LY:"El Al",AT:"Royal Air Maroc",GF:"Gulf Air",EN:"Air Dolomiti",QF:"Qantas",SQ:"Singapore Airlines",MH:"Malaysia Airlines",TG:"Thai Airways",NH:"ANA",JL:"Japan Airlines",KE:"Korean Air",OZ:"Asiana"};
@@ -467,7 +467,25 @@ async function fetchHex(hex){
 }
 async function fetchRoute(callsign){
   if(S.routeCache[callsign]!==undefined)return;S.routeCache[callsign]=null;
-  try{const r=await fetch(`https://api.adsbdb.com/v0/callsign/${callsign}`,{signal:AbortSignal.timeout(6000)});if(!r.ok)return;const data=await r.json();const fr=data?.response?.flightroute;if(!fr)return;S.routeCache[callsign]={airline:fr.airline?.name||null,origin:fr.origin?{icao:fr.origin.icao_code,iata:fr.origin.iata_code,city:fr.origin.municipality,name:fr.origin.name,country:fr.origin.country_iso_name}:null,dest:fr.destination?{icao:fr.destination.icao_code,iata:fr.destination.iata_code,city:fr.destination.municipality,name:fr.destination.name,country:fr.destination.country_iso_name}:null};const sel=S.ac[S.selIdx];const selCs=(sel?.flight||'').trim().replace(/\s/g,'');if(selCs===callsign)renderPanel(sel);}catch{}
+  try{
+    const r=await fetch(`https://api.adsbdb.com/v0/callsign/${callsign}`,{signal:AbortSignal.timeout(6000)});
+    if(!r.ok)return;
+    const data=await r.json();
+    const fr=data?.response?.flightroute;
+    if(!fr)return;
+    S.routeCache[callsign]={
+      airline:fr.airline?.name||null,
+      origin:fr.origin?{icao:fr.origin.icao_code,iata:fr.origin.iata_code,
+        city:fr.origin.municipality,name:fr.origin.name,country:fr.origin.country_iso_name,
+        lat:fr.origin.latitude||null,lon:fr.origin.longitude||null}:null,
+      dest:fr.destination?{icao:fr.destination.icao_code,iata:fr.destination.iata_code,
+        city:fr.destination.municipality,name:fr.destination.name,country:fr.destination.country_iso_name,
+        lat:fr.destination.latitude||null,lon:fr.destination.longitude||null}:null
+    };
+    const sel=S.ac[S.selIdx];
+    const selCs=(sel?.flight||'').trim().replace(/\s/g,'');
+    if(selCs===callsign)renderPanel(sel);
+  }catch{}
 }
 
 // ── RENDER PANEL ──────────────────────────────────────
@@ -495,16 +513,26 @@ function extractData(ac){
   if(altFt!=null){if(altFt<500)phase='A TERRA';else if(altFt<3000)phase=vr&&vr>200?'DECOLLO':(vr&&vr<-200?'FINALE':'CIRCUITO');else if(altFt<8000)phase=vr&&vr>400?'SALITA INIZIALE':(vr&&vr<-400?'AVVICINAMENTO':'TRANSIZIONE');else if(vr&&vr>500)phase='SALITA';else if(vr&&vr<-500)phase='DISCESA';else phase='CROCIERA';}
   const depRaw=(ac.dep||'').toUpperCase().replace(/[^A-Z]/g,''),arrRaw=(ac.arr||'').toUpperCase().replace(/[^A-Z]/g,'');
   // Priorità ai codici ADS-B diretti (trasmessi dall'aereo, sempre relativi al volo corrente).
-  // adsbdb può avere dati storici obsoleti per lo stesso callsign: lo usiamo solo se i codici ICAO/IATA coincidono.
+  // adsbdb può avere dati storici obsoleti: lo usiamo solo se i codici coincidono O se la rotta è geograficamente plausibile.
+  function routePlausible(origin,dest,acLat,acLon){
+    if(!origin||!dest||!origin.lat||!dest.lat||acLat===null)return true;
+    const dOD=haversine(origin.lat,origin.lon,dest.lat,dest.lon);
+    const dOA=haversine(origin.lat,origin.lon,acLat,acLon);
+    const dDA=haversine(dest.lat,dest.lon,acLat,acLon);
+    if(dOD<10)return false; // origine = destinazione, dato spazzatura
+    return(dOA+dDA)<(dOD*2.2); // aereo deve essere approssimativamente lungo la rotta
+  }
   function resolveAp(raw,rtInfo){
     if(raw){
-      if(rtInfo&&(rtInfo.icao===raw||rtInfo.iata===raw))return rtInfo; // match: dati completi da adsbdb
-      return{icao:raw,iata:raw.length===3?raw:null,city:'',name:'',country:''}; // no match: solo codice ADS-B
+      if(rtInfo&&(rtInfo.icao===raw||rtInfo.iata===raw))return rtInfo;
+      return{icao:raw,iata:raw.length===3?raw:null,city:'',name:'',country:''};
     }
-    return rtInfo||null; // nessun dato ADS-B: fallback adsbdb
+    return rtInfo||null;
   }
-  const depInfo=resolveAp(depRaw,rt.origin);
-  const arrInfo=resolveAp(arrRaw,rt.dest);
+  const rtPlausible=routePlausible(rt.origin,rt.dest,S.lat,S.lon);
+  const rtSafe=rtPlausible?rt:{};
+  const depInfo=resolveAp(depRaw,rtSafe.origin);
+  const arrInfo=resolveAp(arrRaw,rtSafe.dest);
   return{cs,aln,typCode,reg,mfr,model,year,pax,dist,altFt,altFtS,altM,spd,vr,trk,total,num,phase,depInfo,arrInfo,hx,rt};
 }
 
@@ -521,7 +549,8 @@ function shareBtn(){return `<button onclick="shareWhatsapp()" style="float:right
 function apBlockStd(info,lbl,align){
   if(!info)return`<div class="ap" style="text-align:${align};color:${T.col}"><div class="ap-code" style="color:${T.gm}">—</div><div class="ap-lbl" style="color:${T.gm}">${lbl}</div></div>`;
   const dc=info.iata||info.icao||'—';
-  return`<div class="ap" style="text-align:${align};color:${T.col}">${info.country?flagImg(info.country):''}<div class="ap-code" style="color:${T.colW}">${dc}</div>${info.city?`<div class="ap-city" style="color:${T.g}">${info.city}</div>`:''} ${info.name?`<div class="ap-name" style="color:${T.gm}">${info.name}</div>`:''}<div class="ap-lbl" style="color:${T.gm}">${lbl}</div></div>`;
+  const flagHtml=info.country?`<div style="text-align:${align};margin-bottom:3px;">${flagImg(info.country)}</div>`:'';
+  return`<div class="ap" style="text-align:${align};color:${T.col}">${flagHtml}<div class="ap-code" style="color:${T.colW}">${dc}</div>${info.city?`<div class="ap-city" style="color:${T.g}">${info.city}</div>`:''} ${info.name?`<div class="ap-name" style="color:${T.gm}">${info.name}</div>`:''}<div class="ap-lbl" style="color:${T.gm}">${lbl}</div></div>`;
 }
 
 function renderRadar(ac,d){
