@@ -494,8 +494,17 @@ function extractData(ac){
   let phase='—';
   if(altFt!=null){if(altFt<500)phase='A TERRA';else if(altFt<3000)phase=vr&&vr>200?'DECOLLO':(vr&&vr<-200?'FINALE':'CIRCUITO');else if(altFt<8000)phase=vr&&vr>400?'SALITA INIZIALE':(vr&&vr<-400?'AVVICINAMENTO':'TRANSIZIONE');else if(vr&&vr>500)phase='SALITA';else if(vr&&vr<-500)phase='DISCESA';else phase='CROCIERA';}
   const depRaw=(ac.dep||'').toUpperCase().replace(/[^A-Z]/g,''),arrRaw=(ac.arr||'').toUpperCase().replace(/[^A-Z]/g,'');
-  const depInfo=rt.origin||(depRaw?{icao:depRaw,iata:depRaw.length===3?depRaw:null,city:'',name:'',country:''}:null);
-  const arrInfo=rt.dest||(arrRaw?{icao:arrRaw,iata:arrRaw.length===3?arrRaw:null,city:'',name:'',country:''}:null);
+  // Priorità ai codici ADS-B diretti (trasmessi dall'aereo, sempre relativi al volo corrente).
+  // adsbdb può avere dati storici obsoleti per lo stesso callsign: lo usiamo solo se i codici ICAO/IATA coincidono.
+  function resolveAp(raw,rtInfo){
+    if(raw){
+      if(rtInfo&&(rtInfo.icao===raw||rtInfo.iata===raw))return rtInfo; // match: dati completi da adsbdb
+      return{icao:raw,iata:raw.length===3?raw:null,city:'',name:'',country:''}; // no match: solo codice ADS-B
+    }
+    return rtInfo||null; // nessun dato ADS-B: fallback adsbdb
+  }
+  const depInfo=resolveAp(depRaw,rt.origin);
+  const arrInfo=resolveAp(arrRaw,rt.dest);
   return{cs,aln,typCode,reg,mfr,model,year,pax,dist,altFt,altFtS,altM,spd,vr,trk,total,num,phase,depInfo,arrInfo,hx,rt};
 }
 
