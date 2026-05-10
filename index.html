@@ -473,19 +473,136 @@ async function fetchRoute(callsign){
     const data=await r.json();
     const fr=data?.response?.flightroute;
     if(!fr)return;
-    S.routeCache[callsign]={
-      airline:fr.airline?.name||null,
-      origin:fr.origin?{icao:fr.origin.icao_code,iata:fr.origin.iata_code,
-        city:fr.origin.municipality,name:fr.origin.name,country:fr.origin.country_iso_name,
-        lat:fr.origin.latitude||null,lon:fr.origin.longitude||null}:null,
-      dest:fr.destination?{icao:fr.destination.icao_code,iata:fr.destination.iata_code,
-        city:fr.destination.municipality,name:fr.destination.name,country:fr.destination.country_iso_name,
-        lat:fr.destination.latitude||null,lon:fr.destination.longitude||null}:null
-    };
+    // Salviamo SOLO il nome compagnia — la rotta la prendiamo dai dati ADS-B diretti
+    S.routeCache[callsign]={airline:fr.airline?.name||null};
     const sel=S.ac[S.selIdx];
     const selCs=(sel?.flight||'').trim().replace(/\s/g,'');
     if(selCs===callsign)renderPanel(sel);
   }catch{}
+}
+
+
+// ── DATABASE AEROPORTI (ICAO → città, codice paese) ──────────────
+const AP={
+  LIRF:{c:"Roma Fiumicino",co:"it"},LIRA:{c:"Roma Ciampino",co:"it"},
+  LIMC:{c:"Milano Malpensa",co:"it"},LIML:{c:"Milano Linate",co:"it"},
+  LIME:{c:"Bergamo Orio",co:"it"},LIPE:{c:"Bologna",co:"it"},
+  LIPX:{c:"Verona",co:"it"},LIPZ:{c:"Venezia",co:"it"},
+  LIPQ:{c:"Trieste",co:"it"},LIPY:{c:"Ancona",co:"it"},
+  LIRN:{c:"Napoli",co:"it"},LIBR:{c:"Brindisi",co:"it"},
+  LIBD:{c:"Bari",co:"it"},LICA:{c:"Lamezia Terme",co:"it"},
+  LICJ:{c:"Palermo",co:"it"},LICC:{c:"Catania",co:"it"},
+  LICT:{c:"Trapani",co:"it"},LICB:{c:"Comiso",co:"it"},
+  LIEE:{c:"Cagliari",co:"it"},LIEO:{c:"Olbia",co:"it"},
+  LIEA:{c:"Alghero",co:"it"},LIMS:{c:"Pisa",co:"it"},
+  LILQ:{c:"Pescara",co:"it"},LIPR:{c:"Rimini",co:"it"},
+  LIPK:{c:"Forlì",co:"it"},LIRP:{c:"Pisa (mil)",co:"it"},
+  EGLL:{c:"Londra Heathrow",co:"gb"},EGKK:{c:"Londra Gatwick",co:"gb"},
+  EGCC:{c:"Manchester",co:"gb"},EGGW:{c:"Londra Luton",co:"gb"},
+  EGSS:{c:"Londra Stansted",co:"gb"},EGPH:{c:"Edimburgo",co:"gb"},
+  EGPF:{c:"Glasgow",co:"gb"},EGBB:{c:"Birmingham",co:"gb"},
+  EIDW:{c:"Dublino",co:"ie"},EICK:{c:"Cork",co:"ie"},
+  EHAM:{c:"Amsterdam",co:"nl"},EHRD:{c:"Rotterdam",co:"nl"},
+  LFPG:{c:"Parigi CDG",co:"fr"},LFPO:{c:"Parigi Orly",co:"fr"},
+  LFMN:{c:"Nizza",co:"fr"},LFLL:{c:"Lione",co:"fr"},
+  LFRS:{c:"Nantes",co:"fr"},LFBO:{c:"Tolosa",co:"fr"},
+  LFBD:{c:"Bordeaux",co:"fr"},LFSB:{c:"Basilea-Mulhouse",co:"fr"},
+  LFST:{c:"Strasburgo",co:"fr"},LFML:{c:"Marsiglia",co:"fr"},
+  EDDF:{c:"Francoforte",co:"de"},EDDM:{c:"Monaco",co:"de"},
+  EDDB:{c:"Berlino",co:"de"},EDDH:{c:"Amburgo",co:"de"},
+  EDDK:{c:"Colonia",co:"de"},EDDL:{c:"Düsseldorf",co:"de"},
+  EDDS:{c:"Stoccarda",co:"de"},EDDN:{c:"Norimberga",co:"de"},
+  EDDT:{c:"Berlino Tegel",co:"de"},EDDV:{c:"Hannover",co:"de"},
+  LEMD:{c:"Madrid",co:"es"},LEBL:{c:"Barcellona",co:"es"},
+  LEPA:{c:"Palma Maiorca",co:"es"},LEMG:{c:"Malaga",co:"es"},
+  LEAL:{c:"Alicante",co:"es"},LEBB:{c:"Bilbao",co:"es"},
+  LEVX:{c:"Vigo",co:"es"},LEAS:{c:"Asturias",co:"es"},
+  GCLP:{c:"Las Palmas",co:"es"},GCXO:{c:"Tenerife Nord",co:"es"},
+  GCTS:{c:"Tenerife Sud",co:"es"},GCFV:{c:"Fuerteventura",co:"es"},
+  GCRR:{c:"Lanzarote",co:"es"},GCLA:{c:"La Palma",co:"es"},
+  LPPT:{c:"Lisbona",co:"pt"},LPMA:{c:"Madeira",co:"pt"},
+  LPAZ:{c:"São Miguel Azzorre",co:"pt"},LPFR:{c:"Faro",co:"pt"},
+  LPPR:{c:"Porto",co:"pt"},
+  LSZH:{c:"Zurigo",co:"ch"},LSGG:{c:"Ginevra",co:"ch"},
+  LSZA:{c:"Lugano",co:"ch"},LSMM:{c:"Sion",co:"ch"},
+  LOWW:{c:"Vienna",co:"at"},LOWS:{c:"Salisburgo",co:"at"},
+  LOWG:{c:"Graz",co:"at"},LOWI:{c:"Innsbruck",co:"at"},
+  LKPR:{c:"Praga",co:"cz"},LKMT:{c:"Ostrava",co:"cz"},
+  EPWA:{c:"Varsavia",co:"pl"},EPKK:{c:"Cracovia",co:"pl"},
+  EPGD:{c:"Danzica",co:"pl"},EPWR:{c:"Breslavia",co:"pl"},
+  LHBP:{c:"Budapest",co:"hu"},LDZA:{c:"Zagabria",co:"hr"},
+  LDSP:{c:"Spalato",co:"hr"},LDDU:{c:"Dubrovnik",co:"hr"},
+  LJLJ:{c:"Lubiana",co:"si"},LYBE:{c:"Belgrado",co:"rs"},
+  LWSK:{c:"Skopje",co:"mk"},LATI:{c:"Tirana",co:"al"},
+  LBSF:{c:"Sofia",co:"bg"},LROP:{c:"Bucarest",co:"ro"},
+  LRCL:{c:"Cluj-Napoca",co:"ro"},LUKK:{c:"Chisinau",co:"md"},
+  UKBB:{c:"Kiev Boryspil",co:"ua"},UKKK:{c:"Kiev Sikorsky",co:"ua"},
+  UMMS:{c:"Minsk",co:"by"},EVRA:{c:"Riga",co:"lv"},
+  EYVI:{c:"Vilnius",co:"lt"},EETN:{c:"Tallinn",co:"ee"},
+  EFHK:{c:"Helsinki",co:"fi"},ESGG:{c:"Göteborg",co:"se"},
+  ENGM:{c:"Oslo Gardermoen",co:"no"},ESSA:{c:"Stoccolma Arlanda",co:"se"},
+  ESMS:{c:"Malmö",co:"se"},EKCH:{c:"Copenaghen",co:"dk"},
+  BIKF:{c:"Reykjavik Keflavik",co:"is"},
+  LGAV:{c:"Atene",co:"gr"},LGTS:{c:"Salonicco",co:"gr"},
+  LGRP:{c:"Rodi",co:"gr"},LGKR:{c:"Corfù",co:"gr"},
+  LGMK:{c:"Mykonos",co:"gr"},LGSR:{c:"Santorini",co:"gr"},
+  LGKF:{c:"Cefalonia",co:"gr"},LGZA:{c:"Zante",co:"gr"},
+  LCLK:{c:"Larnaca",co:"cy"},LCPH:{c:"Pafo",co:"cy"},
+  LLBG:{c:"Tel Aviv",co:"il"},HECA:{c:"Il Cairo",co:"eg"},
+  LTFM:{c:"Istanbul Nuovo",co:"tr"},LTBA:{c:"Istanbul Ataturk",co:"tr"},
+  LTAI:{c:"Antalya",co:"tr"},LTFJ:{c:"Istanbul Sabiha",co:"tr"},
+  LTAC:{c:"Ankara",co:"tr"},LTFE:{c:"Bodrum",co:"tr"},
+  LTBS:{c:"Dalaman",co:"tr"},LTAN:{c:"Konya",co:"tr"},
+  OMDB:{c:"Dubai",co:"ae"},OMAA:{c:"Abu Dhabi",co:"ae"},
+  OMDW:{c:"Dubai Al Maktoum",co:"ae"},
+  OERK:{c:"Riyadh",co:"sa"},OEJN:{c:"Jeddah",co:"sa"},
+  OEDF:{c:"Dammam",co:"sa"},OTHH:{c:"Doha",co:"qa"},
+  OBBI:{c:"Bahrain",co:"bh"},OOMS:{c:"Muscat",co:"om"},
+  OKBK:{c:"Kuwait",co:"kw"},OJAM:{c:"Amman",co:"jo"},
+  OLBA:{c:"Beirut",co:"lb"},ORBI:{c:"Baghdad",co:"iq"},
+  UUEE:{c:"Mosca Sheremetyevo",co:"ru"},UUDD:{c:"Mosca Domodedovo",co:"ru"},
+  UUWW:{c:"Mosca Vnukovo",co:"ru"},USSS:{c:"Ekaterinburg",co:"ru"},
+  URSS:{c:"Sochi",co:"ru"},ULLI:{c:"San Pietroburgo",co:"ru"},
+  VHHH:{c:"Hong Kong",co:"hk"},RJTT:{c:"Tokyo Haneda",co:"jp"},
+  RJAA:{c:"Tokyo Narita",co:"jp"},RJOO:{c:"Osaka Itami",co:"jp"},
+  RKSI:{c:"Seoul Incheon",co:"kr"},ZBAA:{c:"Pechino",co:"cn"},
+  ZSPD:{c:"Shanghai Pudong",co:"cn"},ZGGG:{c:"Guangzhou",co:"cn"},
+  VIDP:{c:"Delhi",co:"in"},VABB:{c:"Mumbai",co:"in"},
+  VOMM:{c:"Chennai",co:"in"},VOBL:{c:"Bangalore",co:"in"},
+  VTBS:{c:"Bangkok Suvarnabhumi",co:"th"},VTBD:{c:"Bangkok Don Mueang",co:"th"},
+  WSSS:{c:"Singapore",co:"sg"},WMKK:{c:"Kuala Lumpur",co:"my"},
+  WIII:{c:"Giacarta",co:"id"},NZAA:{c:"Auckland",co:"nz"},
+  YSSY:{c:"Sydney",co:"au"},YMML:{c:"Melbourne",co:"au"},
+  YBBN:{c:"Brisbane",co:"au"},YPER:{c:"Perth",co:"au"},
+  KJFK:{c:"New York JFK",co:"us"},KLAX:{c:"Los Angeles",co:"us"},
+  KORD:{c:"Chicago O'Hare",co:"us"},KATL:{c:"Atlanta",co:"us"},
+  KMIA:{c:"Miami",co:"us"},KSFO:{c:"San Francisco",co:"us"},
+  KBOS:{c:"Boston",co:"us"},KDFW:{c:"Dallas",co:"us"},
+  KEWR:{c:"Newark",co:"us"},KIAH:{c:"Houston",co:"us"},
+  KDEN:{c:"Denver",co:"us"},KLAS:{c:"Las Vegas",co:"us"},
+  KPHX:{c:"Phoenix",co:"us"},KSEA:{c:"Seattle",co:"us"},
+  KLGA:{c:"New York LaGuardia",co:"us"},KFLL:{c:"Fort Lauderdale",co:"us"},
+  KMCO:{c:"Orlando",co:"us"},KTPA:{c:"Tampa",co:"us"},
+  KDTW:{c:"Detroit",co:"us"},KPHL:{c:"Philadelphia",co:"us"},
+  CYYZ:{c:"Toronto",co:"ca"},CYVR:{c:"Vancouver",co:"ca"},
+  CYUL:{c:"Montreal",co:"ca"},CYYC:{c:"Calgary",co:"ca"},
+  SBGR:{c:"São Paulo Guarulhos",co:"br"},SBKP:{c:"Campinas",co:"br"},
+  SBBR:{c:"Brasilia",co:"br"},SAEZ:{c:"Buenos Aires",co:"ar"},
+  MMMX:{c:"Città del Messico",co:"mx"},FACT:{c:"Città del Capo",co:"za"},
+  FAOR:{c:"Johannesburg",co:"za"},HKJK:{c:"Nairobi",co:"ke"},
+  HAAB:{c:"Addis Abeba",co:"et"},DNMM:{c:"Lagos",co:"ng"},
+  DTTA:{c:"Tunisi",co:"tn"},DAAG:{c:"Algeri",co:"dz"},
+  GMMN:{c:"Casablanca",co:"ma"},DTMB:{c:"Monastir",co:"tn"},
+  DTNH:{c:"Enfidha",co:"tn"},GMME:{c:"Rabat",co:"ma"},
+  GMAD:{c:"Agadir",co:"ma"},GMTT:{c:"Tangeri",co:"ma"},
+};
+function apLookup(icao){
+  if(!icao)return null;
+  const k=icao.toUpperCase().substring(0,4);
+  const r=AP[k];
+  if(r)return{icao:k,iata:icao.length===3?icao:null,city:r.c,country:r.co};
+  // fallback: mostra solo il codice senza città/bandiera
+  return{icao:k,iata:icao.length===3?icao:null,city:'',country:''};
 }
 
 // ── RENDER PANEL ──────────────────────────────────────
@@ -511,28 +628,12 @@ function extractData(ac){
   const total=S.ac.filter(isVisible).length,num=S.selIdx+1;
   let phase='—';
   if(altFt!=null){if(altFt<500)phase='A TERRA';else if(altFt<3000)phase=vr&&vr>200?'DECOLLO':(vr&&vr<-200?'FINALE':'CIRCUITO');else if(altFt<8000)phase=vr&&vr>400?'SALITA INIZIALE':(vr&&vr<-400?'AVVICINAMENTO':'TRANSIZIONE');else if(vr&&vr>500)phase='SALITA';else if(vr&&vr<-500)phase='DISCESA';else phase='CROCIERA';}
-  const depRaw=(ac.dep||'').toUpperCase().replace(/[^A-Z]/g,''),arrRaw=(ac.arr||'').toUpperCase().replace(/[^A-Z]/g,'');
-  // Priorità ai codici ADS-B diretti (trasmessi dall'aereo, sempre relativi al volo corrente).
-  // adsbdb può avere dati storici obsoleti: lo usiamo solo se i codici coincidono O se la rotta è geograficamente plausibile.
-  function routePlausible(origin,dest,acLat,acLon){
-    if(!origin||!dest||!origin.lat||!dest.lat||acLat===null)return true;
-    const dOD=haversine(origin.lat,origin.lon,dest.lat,dest.lon);
-    const dOA=haversine(origin.lat,origin.lon,acLat,acLon);
-    const dDA=haversine(dest.lat,dest.lon,acLat,acLon);
-    if(dOD<10)return false; // origine = destinazione, dato spazzatura
-    return(dOA+dDA)<(dOD*2.2); // aereo deve essere approssimativamente lungo la rotta
-  }
-  function resolveAp(raw,rtInfo){
-    if(raw){
-      if(rtInfo&&(rtInfo.icao===raw||rtInfo.iata===raw))return rtInfo;
-      return{icao:raw,iata:raw.length===3?raw:null,city:'',name:'',country:''};
-    }
-    return rtInfo||null;
-  }
-  const rtPlausible=routePlausible(rt.origin,rt.dest,S.lat,S.lon);
-  const rtSafe=rtPlausible?rt:{};
-  const depInfo=resolveAp(depRaw,rtSafe.origin);
-  const arrInfo=resolveAp(arrRaw,rtSafe.dest);
+  // Rotta: solo da ADS-B diretto (ac.dep / ac.arr) + lookup statico per città e bandiera.
+  // adsbdb è usato SOLO per il nome compagnia, mai per la rotta (dati storici inaffidabili).
+  const depRaw=(ac.dep||'').toUpperCase().replace(/[^A-Z]/g,'');
+  const arrRaw=(ac.arr||'').toUpperCase().replace(/[^A-Z]/g,'');
+  const depInfo=depRaw?apLookup(depRaw):null;
+  const arrInfo=arrRaw?apLookup(arrRaw):null;
   return{cs,aln,typCode,reg,mfr,model,year,pax,dist,altFt,altFtS,altM,spd,vr,trk,total,num,phase,depInfo,arrInfo,hx,rt};
 }
 
