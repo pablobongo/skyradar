@@ -82,11 +82,11 @@
 <div id="loading">
   <div class="spinner" id="lspinner"></div>
   <div id="ltxt">ACQUISIZIONE SEGNALE GPS...</div>
-  <div id="lver" style="font-size:9px;letter-spacing:3px;font-weight:bold;">SKYRADAR v2.4</div>
+  <div id="lver" style="font-size:9px;letter-spacing:3px;font-weight:bold;">SKYRADAR v2.4.1</div>
 </div>
 <div id="app" style="display:none">
   <div id="header">
-    <div class="hlogo"><div class="dot" id="hdot"></div><span>SKYRADAR</span><span class="hver" id="hv">v2.4</span></div>
+    <div class="hlogo"><div class="dot" id="hdot"></div><span>SKYRADAR</span><span class="hver" id="hv">v2.4.1</span></div>
     <div id="hclock">--:--:--</div>
     <button class="hbtn" id="themebtn" onclick="cycleTheme()">TEMA</button>
     <button class="hbtn" id="viewbtn" onclick="toggleView()">MAPPA</button>
@@ -114,7 +114,7 @@
 </div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-// SKYRADAR v2.4
+// SKYRADAR v2.4.1
 
 // ── TEMI ──────────────────────────────────────────────
 const THEMES={
@@ -614,13 +614,58 @@ const AP={
   DTNH:{c:"Enfidha",co:"tn"},GMME:{c:"Rabat",co:"ma"},
   GMAD:{c:"Agadir",co:"ma"},GMTT:{c:"Tangeri",co:"ma"},
 };
-function apLookup(icao){
-  if(!icao)return null;
-  const k=icao.toUpperCase().substring(0,4);
-  const r=AP[k];
-  if(r)return{icao:k,iata:icao.length===3?icao:null,city:r.c,country:r.co};
-  // fallback: mostra solo il codice senza città/bandiera
-  return{icao:k,iata:icao.length===3?icao:null,city:'',country:''};
+// Mappa IATA (3 lettere) → ICAO (4 lettere) per aeroporti comuni
+// airplanes.live può restituire sia codici IATA che ICAO in ac.dep / ac.arr
+const IATA2ICAO={
+  FCO:'LIRF',CIA:'LIRA',MXP:'LIMC',LIN:'LIML',BGY:'LIME',BLQ:'LIPE',
+  VRN:'LIPX',VCE:'LIPZ',TRS:'LIPQ',AOI:'LIPY',NAP:'LIRN',BDS:'LIBR',
+  BRI:'LIBD',SUF:'LICA',PMO:'LICJ',CTA:'LICC',TPS:'LICT',CIY:'LICB',
+  CAG:'LIEE',OLB:'LIEO',AHO:'LIEA',PSA:'LIMS',PSR:'LILQ',RMI:'LIPR',
+  LHR:'EGLL',LGW:'EGKK',MAN:'EGCC',LTN:'EGGW',STN:'EGSS',EDI:'EGPH',
+  GLA:'EGPF',BHX:'EGBB',DUB:'EIDW',ORK:'EICK',
+  AMS:'EHAM',RTM:'EHRD',CDG:'LFPG',ORY:'LFPO',NCE:'LFMN',LYS:'LFLL',
+  NTE:'LFRS',TLS:'LFBO',BOD:'LFBD',BSL:'LFSB',SXB:'LFST',MRS:'LFML',
+  FRA:'EDDF',MUC:'EDDM',BER:'EDDB',HAM:'EDDH',CGN:'EDDK',DUS:'EDDL',
+  STR:'EDDS',NUE:'EDDN',HAJ:'EDDV',
+  MAD:'LEMD',BCN:'LEBL',PMI:'LEPA',AGP:'LEMG',ALC:'LEAL',BIO:'LEBB',
+  LPA:'GCLP',TFN:'GCXO',TFS:'GCTS',FUE:'GCFV',ACE:'GCRR',SPC:'GCLA',
+  LIS:'LPPT',FNC:'LPMA',PDL:'LPAZ',FAO:'LPFR',OPO:'LPPR',
+  ZRH:'LSZH',GVA:'LSGG',LUG:'LSZA',
+  VIE:'LOWW',SZG:'LOWS',GRZ:'LOWG',INN:'LOWI',
+  PRG:'LKPR',OSR:'LKMT',WAW:'EPWA',KRK:'EPKK',GDN:'EPGD',WRO:'EPWR',
+  BUD:'LHBP',ZAG:'LDZA',SPU:'LDSP',DBV:'LDDU',LJU:'LJLJ',
+  BEG:'LYBE',SKP:'LWSK',TIA:'LATI',SOF:'LBSF',OTP:'LROP',CLJ:'LRCL',
+  RIX:'EVRA',VNO:'EYVI',TLL:'EETN',HEL:'EFHK',GOT:'ESGG',
+  OSL:'ENGM',ARN:'ESSA',MMX:'ESMS',CPH:'EKCH',KEF:'BIKF',
+  ATH:'LGAV',SKG:'LGTS',RHO:'LGRP',CFU:'LGKR',JMK:'LGMK',JTR:'LGSR',
+  EFL:'LGKF',ZTH:'LGZA',LCA:'LCLK',PFO:'LCPH',TLV:'LLBG',CAI:'HECA',
+  IST:'LTFM',SAW:'LTFJ',AYT:'LTAI',ESB:'LTAC',BJV:'LTFE',DLM:'LTBS',
+  DXB:'OMDB',AUH:'OMAA',DWC:'OMDW',RUH:'OERK',JED:'OEJN',DMM:'OEDF',
+  DOH:'OTHH',BAH:'OBBI',MCT:'OOMS',KWI:'OKBK',AMM:'OJAM',BEY:'OLBA',
+  SVO:'UUEE',DME:'UUDD',VKO:'UUWW',SVX:'USSS',AER:'URSS',LED:'ULLI',
+  HKG:'VHHH',HND:'RJTT',NRT:'RJAA',ITM:'RJOO',ICN:'RKSI',PEK:'ZBAA',
+  PVG:'ZSPD',CAN:'ZGGG',DEL:'VIDP',BOM:'VABB',MAA:'VOMM',BLR:'VOBL',
+  BKK:'VTBS',DMK:'VTBD',SIN:'WSSS',KUL:'WMKK',CGK:'WIII',
+  AKL:'NZAA',SYD:'YSSY',MEL:'YMML',BNE:'YBBN',PER:'YPER',
+  JFK:'KJFK',LAX:'KLAX',ORD:'KORD',ATL:'KATL',MIA:'KMIA',SFO:'KSFO',
+  BOS:'KBOS',DFW:'KDFW',EWR:'KEWR',IAH:'KIAH',DEN:'KDEN',LAS:'KLAS',
+  PHX:'KPHX',SEA:'KSEA',LGA:'KLGA',FLL:'KFLL',MCO:'KMCO',TPA:'KTPA',
+  DTW:'KDTW',PHL:'KPHL',YYZ:'CYYZ',YVR:'CYVR',YUL:'CYUL',YYC:'CYYC',
+  GRU:'SBGR',VCP:'SBKP',BSB:'SBBR',EZE:'SAEZ',MEX:'MMMX',
+  CPT:'FACT',JNB:'FAOR',NBO:'HKJK',ADD:'HAAB',LOS:'DNMM',
+  TUN:'DTTA',ALG:'DAAG',CMN:'GMMN',MIR:'DTMB',NBE:'DTNH',
+  RBA:'GMME',AGA:'GMAD',TNG:'GMTT',
+};
+function apLookup(code){
+  if(!code)return null;
+  const u=code.toUpperCase().trim();
+  // prova ICAO diretto (4 lettere)
+  if(u.length===4&&AP[u])return{icao:u,iata:AP[u].iata||null,city:AP[u].c,country:AP[u].co};
+  // prova IATA (3 lettere) → converti in ICAO
+  const icao4=IATA2ICAO[u.substring(0,3)];
+  if(icao4&&AP[icao4])return{icao:icao4,iata:u.substring(0,3),city:AP[icao4].c,country:AP[icao4].co};
+  // codice non in database: mostra solo il codice
+  return{icao:u,iata:u.length===3?u:null,city:'',country:''};
 }
 
 // ── RENDER PANEL ──────────────────────────────────────
