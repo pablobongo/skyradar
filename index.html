@@ -528,7 +528,7 @@ function extractData(ac){
       if(rtInfo&&(rtInfo.icao===raw||rtInfo.iata===raw))return rtInfo; // match: dati completi da adsbdb
       return{icao:raw,iata:raw.length===3?raw:null,city:'',name:'',country:''}; // no match: solo codice ADS-B
     }
-    return rtInfo||null; // nessun dato ADS-B: fallback adsbdb
+    return null; // nessun dato ADS-B e nessun match adsbdb: non mostrare nulla
   }
   const depInfo=resolveAp(depRaw,rt.origin);
   const arrInfo=resolveAp(arrRaw,rt.dest);
