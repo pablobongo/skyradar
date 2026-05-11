@@ -1,6 +1,5 @@
-// SkyRadar Service Worker v2.3
-// Rileva automaticamente il base path (funziona su GitHub Pages e qualsiasi subdirectory)
-const CACHE = 'skyradar-v23';
+// SkyRadar Service Worker v2.5
+const CACHE = 'skyradar-v25';
 const BASE = self.location.pathname.replace('/sw.js', '');
 
 const SHELL = [
@@ -12,7 +11,6 @@ const SHELL = [
   BASE + '/icon-512.png',
 ];
 
-// Installa: metti in cache l'app shell
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE)
@@ -22,7 +20,6 @@ self.addEventListener('install', e => {
   self.skipWaiting();
 });
 
-// Attiva: elimina cache vecchie
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys =>
@@ -32,14 +29,14 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 
-// Fetch: strategia ibrida
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
-  // API esterne -> sempre dalla rete, nessuna cache
   if (url.hostname.includes('airplanes.live') ||
       url.hostname.includes('hexdb.io') ||
       url.hostname.includes('adsbdb.com') ||
+      url.hostname.includes('aerodatabox') ||
+      url.hostname.includes('rapidapi.com') ||
       url.hostname.includes('openstreetmap.org') ||
       url.hostname.includes('flagcdn.com') ||
       url.hostname.includes('unpkg.com') ||
@@ -51,11 +48,9 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // App shell -> cache first, poi rete (con aggiornamento in background)
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) {
-        // Serve dalla cache immediatamente, aggiorna in background
         fetch(e.request).then(fresh => {
           if (fresh && fresh.status === 200) {
             caches.open(CACHE).then(c => c.put(e.request, fresh));
@@ -63,7 +58,6 @@ self.addEventListener('fetch', e => {
         }).catch(() => {});
         return cached;
       }
-      // Non in cache -> vai in rete
       return fetch(e.request).then(response => {
         if (response && response.status === 200) {
           const clone = response.clone();
@@ -71,7 +65,6 @@ self.addEventListener('fetch', e => {
         }
         return response;
       }).catch(() => {
-        // Rete non disponibile e non in cache -> serve index.html come fallback
         return caches.match(BASE + '/index.html');
       });
     })
