@@ -457,7 +457,7 @@ async function fetchAC(){
     const vis=ac.filter(isVisible);
     document.getElementById('hcount').textContent='✈ '+vis.length;
     if(vis.length===0){document.getElementById('nosig').style.display='';document.getElementById('finfo').style.display='none';}
-    else{document.getElementById('nosig').style.display='none';document.getElementById('finfo').style.display='';renderPanel(ac[S.selIdx]);ac.slice(0,10).forEach(a=>{if(a.hex)fetchHex(a.hex);const cs=(a.flight||'').trim().replace(/\s/g,'');if(cs){fetchRoute(cs).then(()=>{if(!S.routeCache[cs]||(!S.routeCache[cs].origin&&!S.routeCache[cs].dest))fetchAeroDataBox(cs);});}});}
+    else{document.getElementById('nosig').style.display='none';document.getElementById('finfo').style.display='';renderPanel(ac[S.selIdx]);ac.slice(0,10).forEach(a=>{if(a.hex)fetchHex(a.hex);const cs=(a.flight||'').trim().replace(/\s/g,'');if(cs){fetchRoute(cs);setTimeout(()=>{if(!S.routeCache[cs]||(!S.routeCache[cs].origin&&!S.routeCache[cs].dest))fetchAeroDataBox(cs);},3000);}});}
     if(viewMode==='map')updateMapView();
   }catch(e){console.warn('fetchAC:',e.message);}
 }
@@ -497,15 +497,7 @@ async function fetchRoute(callsign){
   }catch{}
 }
 
-// ── AERODATABOX (chiave salvata in localStorage, mai nel codice) ──
-function getAeroKey(){
-  let k=localStorage.getItem('sr_aero_key');
-  if(!k){
-    k=prompt('Inserisci la tua chiave RapidAPI (AeroDataBox) per dati aeroporto completi:\n(lascia vuoto per saltare)');
-    if(k&&k.trim())localStorage.setItem('sr_aero_key',k.trim());
-  }
-  return k||null;
-}
+// ── AERODATABOX FALLBACK ─────────────────────────────
 async function fetchAeroDataBox(callsign){
   if(S.routeCache[callsign]!==undefined)return;
   const key=localStorage.getItem('sr_aero_key');
@@ -530,6 +522,22 @@ async function fetchAeroDataBox(callsign){
     const selCs=(sel?.flight||'').trim().replace(/\s/g,'');
     if(selCs===callsign)renderPanel(sel);
   }catch{}
+}
+function liveBtn(cs){
+  const url='https://www.flightaware.com/live/flight/'+cs.trim().replace(/\s/g,'');
+  return `<button onclick="window.open('${url}','_blank')" style="background:none;border:1px solid ${T.gf};color:${T.g};font-size:9px;font-weight:bold;padding:2px 8px;cursor:pointer;font-family:inherit;letter-spacing:1px;">&#9992; LIVE</button>`;
+}
+function keyBtn(){
+  const has=!!localStorage.getItem('sr_aero_key');
+  return `<button onclick="setAeroKey()" style="background:none;border:1px solid ${T.gf};color:${has?T.g:T.gm};font-size:9px;font-weight:bold;padding:2px 8px;cursor:pointer;font-family:inherit;letter-spacing:1px;" title="${has?'Chiave salvata - clicca per modificare':'Imposta chiave AeroDataBox'}">${has?'&#128273;':'&#128274;'} API</button>`;
+}
+function setAeroKey(){
+  const cur=localStorage.getItem('sr_aero_key')||'';
+  const k=prompt('Chiave RapidAPI AeroDataBox:\n(cancella tutto per rimuoverla)',cur);
+  if(k===null)return;
+  if(k.trim())localStorage.setItem('sr_aero_key',k.trim());
+  else localStorage.removeItem('sr_aero_key');
+  renderPanel(S.ac[S.selIdx]);
 }
 
 // ── RENDER PANEL ──────────────────────────────────────
@@ -578,22 +586,6 @@ function renderPanel(ac){
   else renderRadar(ac,d);
 }
 
-function liveBtn(cs){
-  const url='https://www.flightaware.com/live/flight/'+cs.trim().replace(/\s/g,'');
-  return `<button onclick="window.open('${url}','_blank')" style="background:none;border:1px solid ${T.gf};color:${T.g};font-size:9px;font-weight:bold;padding:2px 8px;cursor:pointer;font-family:inherit;letter-spacing:1px;">&#9992; LIVE</button>`;
-}
-function keyBtn(){
-  const has=!!localStorage.getItem('sr_aero_key');
-  return `<button onclick="setAeroKey()" style="background:none;border:1px solid ${T.gf};color:${has?T.g:T.gm};font-size:9px;font-weight:bold;padding:2px 8px;cursor:pointer;font-family:inherit;letter-spacing:1px;" title="${has?'Chiave AeroDataBox salvata':'Imposta chiave AeroDataBox'}">${has?'&#128273;':'&#128274;'} API</button>`;
-}
-function setAeroKey(){
-  const cur=localStorage.getItem('sr_aero_key')||'';
-  const k=prompt('Chiave RapidAPI AeroDataBox:\n(cancella tutto per rimuoverla)',cur);
-  if(k===null)return;
-  if(k.trim())localStorage.setItem('sr_aero_key',k.trim());
-  else localStorage.removeItem('sr_aero_key');
-  renderPanel(S.ac[S.selIdx]);
-}
 function shareBtn(){return `<button onclick="shareWhatsapp()" style="float:right;background:none;border:1px solid ${T.gf};color:${T.g};font-size:9px;font-weight:bold;padding:2px 8px;cursor:pointer;font-family:inherit;letter-spacing:1px;">&#128172; WA</button>`;}
 
 function apBlockStd(info,lbl,align){
