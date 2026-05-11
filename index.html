@@ -475,7 +475,6 @@ async function fetchRoute(callsign){
     if(!fr)return;
     const orig=fr.origin,dest=fr.destination;
     if(!orig||!dest)return;
-    // Geo-validazione con coordinate adsbdb
     if(orig.latitude&&dest.latitude&&S.lat!==null){
       const oLat=+orig.latitude,oLon=+orig.longitude;
       const dLat=+dest.latitude,dLon=+dest.longitude;
@@ -544,6 +543,10 @@ function renderPanel(ac){
   else renderRadar(ac,d);
 }
 
+function liveBtn(cs){
+  const url='https://www.flightaware.com/live/flight/'+cs.trim().replace(/\s/g,'');
+  return `<button onclick="window.open('${url}','_blank')" style="background:none;border:1px solid ${T.gf};color:${T.g};font-size:9px;font-weight:bold;padding:2px 8px;cursor:pointer;font-family:inherit;letter-spacing:1px;">&#9992; LIVE</button>`;
+}
 function shareBtn(){return `<button onclick="shareWhatsapp()" style="float:right;background:none;border:1px solid ${T.gf};color:${T.g};font-size:9px;font-weight:bold;padding:2px 8px;cursor:pointer;font-family:inherit;letter-spacing:1px;">&#128172; WA</button>`;}
 
 function apBlockStd(info,lbl,align){
@@ -579,7 +582,7 @@ function renderRadar(ac,d){
       <div class="sbox" style="border-color:${gf}"><div class="sv" style="color:${cw}">${d.altM!=null?(d.altM/1000).toFixed(1)+'k':'—'}</div><div class="sl" style="color:${gm}">METRI</div></div>
       <div class="sbox" style="border-color:${gf}"><div class="sv">${vrStr}</div><div class="sl" style="color:${gm}">FT/MIN</div></div>
     </div>
-    <div class="pbar" style="border-top-color:${gf};color:${g}">${shareBtn()}<span>FASE: <strong>${d.phase}</strong></span><span>${S.lastUpd?'&#10227; '+S.lastUpd:''}</span></div>`;
+    <div class="pbar" style="border-top-color:${gf};color:${g}">${liveBtn(d.cs)} ${shareBtn()}<span>FASE: <strong>${d.phase}</strong></span><span>${S.lastUpd?'&#10227; '+S.lastUpd:''}</span></div>`;
 }
 
 function renderFids(ac,d){
