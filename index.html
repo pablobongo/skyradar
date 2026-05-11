@@ -118,11 +118,11 @@ async function fetchRoute(hex,callsign){
 <div id="loading">
   <div class="spinner" id="lspinner"></div>
   <div id="ltxt">ACQUISIZIONE SEGNALE GPS...</div>
-  <div id="lver" style="font-size:9px;letter-spacing:3px;font-weight:bold;">SKYRADAR v2.4.3</div>
+  <div id="lver" style="font-size:9px;letter-spacing:3px;font-weight:bold;">SKYRADAR v2.4.4</div>
 </div>
 <div id="app" style="display:none">
   <div id="header">
-    <div class="hlogo"><div class="dot" id="hdot"></div><span>SKYRADAR</span><span class="hver" id="hv">v2.4.3</span></div>
+    <div class="hlogo"><div class="dot" id="hdot"></div><span>SKYRADAR</span><span class="hver" id="hv">v2.4.4</span></div>
     <div id="hclock">--:--:--</div>
     <button class="hbtn" id="themebtn" onclick="cycleTheme()">TEMA</button>
     <button class="hbtn" id="viewbtn" onclick="toggleView()">MAPPA</button>
@@ -151,7 +151,7 @@ async function fetchRoute(hex,callsign){
 </div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-// SKYRADAR v2.4.3
+// SKYRADAR v2.4.4
 
 // ── TEMI ──────────────────────────────────────────────
 const THEMES={
@@ -503,41 +503,7 @@ async function fetchHex(hex){
   if(S.hexCache[hex]!==undefined)return;S.hexCache[hex]=null;
   try{const r=await fetch(`https://hexdb.io/api/v1/aircraft/${hex}`,{signal:AbortSignal.timeout(5000)});if(!r.ok)return;const d=await r.json();const ft=d.Type||d.type||'',mfr=parseMfr(ft);S.hexCache[hex]={type:d.ICAOTypeCode||null,fullType:ft,op:d.RegisteredOwners||d.Operator||null,reg:d.Registration||null,year:d.YearBuilt||d.yearBuilt||null,mfr,model:parseModel(ft,mfr)};const sel=S.ac[S.selIdx];if(sel?.hex===hex)renderPanel(sel);}catch{}
 }
-async function fetchRoute(callsign){
-  if(S.routeCache[callsign]!==undefined)return;
-  S.routeCache[callsign]=null;
-  try{
-    const r=await fetch(`https://api.adsbdb.com/v0/callsign/${callsign}`,{signal:AbortSignal.timeout(6000)});
-    if(!r.ok)return;
-    const data=await r.json();
-    const fr=data?.response?.flightroute;
-    if(!fr)return;
-    S.routeCache[callsign]={
-      airline:fr.airline?.name||null,
-      origin:fr.origin?{
-        icao:fr.origin.icao_code,
-        iata:fr.origin.iata_code,
-        city:fr.origin.municipality,
-        name:fr.origin.name,
-        country:fr.origin.country_iso_name,
-        lat:parseFloat(fr.origin.latitude)||null,
-        lon:parseFloat(fr.origin.longitude)||null
-      }:null,
-      dest:fr.destination?{
-        icao:fr.destination.icao_code,
-        iata:fr.destination.iata_code,
-        city:fr.destination.municipality,
-        name:fr.destination.name,
-        country:fr.destination.country_iso_name,
-        lat:parseFloat(fr.destination.latitude)||null,
-        lon:parseFloat(fr.destination.longitude)||null
-      }:null
-    };
-    const sel=S.ac[S.selIdx];
-    const selCs=(sel?.flight||'').trim().replace(/\s/g,'');
-    if(selCs===callsign)renderPanel(sel);
-  }catch{}
-}
+
 
 
 // ── DATABASE AEROPORTI (ICAO → città, codice paese) ──────────────
