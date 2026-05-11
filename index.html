@@ -457,7 +457,7 @@ async function fetchAC(){
     const vis=ac.filter(isVisible);
     document.getElementById('hcount').textContent='✈ '+vis.length;
     if(vis.length===0){document.getElementById('nosig').style.display='';document.getElementById('finfo').style.display='none';}
-    else{document.getElementById('nosig').style.display='none';document.getElementById('finfo').style.display='';renderPanel(ac[S.selIdx]);ac.slice(0,10).forEach(a=>{if(a.hex)fetchHex(a.hex);const cs=(a.flight||'').trim().replace(/\s/g,'');if(cs)fetchRoute(cs);});}
+    else{document.getElementById('nosig').style.display='none';document.getElementById('finfo').style.display='';renderPanel(ac[S.selIdx]);ac.slice(0,10).forEach(a=>{if(a.hex)fetchHex(a.hex);const cs=(a.flight||'').trim().replace(/\s/g,'');if(cs){fetchRoute(cs).then(()=>{if(!S.routeCache[cs]||(!S.routeCache[cs].origin&&!S.routeCache[cs].dest))fetchAeroDataBox(cs,a.hex);});}});}
     if(viewMode==='map')updateMapView();
   }catch(e){console.warn('fetchAC:',e.message);}
 }
@@ -497,6 +497,33 @@ async function fetchRoute(callsign){
   }catch{}
 }
 
+// ── AERODATABOX FALLBACK ─────────────────────────────
+const AERO_KEY='9b767fb6bbmsh7dca17a8b190d18p10db8fjsnf5a839848b23';
+async function fetchAeroDataBox(callsign,hex){
+  // Chiamato solo se adsbdb e ac.dep/ac.arr non hanno dati
+  if(S.routeCache[callsign]!==undefined)return;
+  try{
+    const url='https://aerodatabox.p.rapidapi.com/flights/callsign/'+callsign+'?withAircraftImage=false&withLocation=false';
+    const r=await fetch(url,{
+      signal:AbortSignal.timeout(8000),
+      headers:{'x-rapidapi-host':'aerodatabox.p.rapidapi.com','x-rapidapi-key':AERO_KEY}
+    });
+    if(!r.ok)return;
+    const data=await r.json();
+    const fl=Array.isArray(data)?data[0]:data;
+    if(!fl)return;
+    const dep=fl.departure?.airport,arr=fl.arrival?.airport;
+    S.routeCache[callsign]={
+      airline:fl.airline?.name||null,
+      origin:dep?{icao:dep.icao,iata:dep.iata,city:dep.municipalityName||dep.name,name:dep.name,country:dep.countryCode}:null,
+      dest:arr?{icao:arr.icao,iata:arr.iata,city:arr.municipalityName||arr.name,name:arr.name,country:arr.countryCode}:null
+    };
+    const sel=S.ac[S.selIdx];
+    const selCs=(sel?.flight||'').trim().replace(/\s/g,'');
+    if(selCs===callsign)renderPanel(sel);
+  }catch{}
+}
+
 // ── RENDER PANEL ──────────────────────────────────────
 function extractData(ac){
   const hx=S.hexCache[ac.hex]||{};
@@ -528,7 +555,7 @@ function extractData(ac){
       if(rtInfo&&(rtInfo.icao===raw||rtInfo.iata===raw))return rtInfo; // match: dati completi da adsbdb
       return{icao:raw,iata:raw.length===3?raw:null,city:'',name:'',country:''}; // no match: solo codice ADS-B
     }
-    return null; // nessun dato ADS-B e nessun match adsbdb: non mostrare nulla
+    return null;
   }
   const depInfo=resolveAp(depRaw,rt.origin);
   const arrInfo=resolveAp(arrRaw,rt.dest);
