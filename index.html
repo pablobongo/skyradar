@@ -1,4 +1,40 @@
-<!DOCTYPE html>
+async function fetchRoute(hex,callsign){
+  if(S.routeCache[hex]!==undefined)return;S.routeCache[hex]=null;
+  if(!callsign)return;
+  try{
+    const r=await fetch(`https://api.adsbdb.com/v0/callsign/${callsign}`,{signal:AbortSignal.timeout(6000)});
+    if(!r.ok)return;
+    const data=await r.json();
+    const fr=data?.response?.flightroute;
+    if(!fr)return;
+    const orig=fr.origin,dest=fr.destination;
+    if(!orig||!dest)return;
+    // Validazione geografica: l aereo deve trovarsi approssimativamente tra i due aeroporti.
+    // Se orig e dest hanno coordinate, verifico che l aereo non sia troppo fuori rotta.
+    // Altrimenti accetto comunque (meglio qualcosa che niente).
+    let valid=true;
+    if(orig.latitude&&dest.latitude&&S.lat!==null){
+      const oLat=parseFloat(orig.latitude),oLon=parseFloat(orig.longitude);
+      const dLat=parseFloat(dest.latitude),dLon=parseFloat(dest.longitude);
+      const ac=S.ac.find(a=>a.hex===hex);
+      if(ac){
+        const dOD=haversine(oLat,oLon,dLat,dLon);
+        const dOA=haversine(oLat,oLon,ac.lat,ac.lon);
+        const dDA=haversine(dLat,dLon,ac.lat,ac.lon);
+        // Aereo deve essere entro 2.5x la distanza diretta (permette rotte curve)
+        // E la rotta deve avere senso (distanza minima 50km per filtrare spazzatura)
+        valid = dOD>50 && (dOA+dDA)<(dOD*2.5);
+      }
+    }
+    if(!valid){S.routeCache[hex]={};return;}
+    S.routeCache[hex]={
+      dep:orig.icao_code||orig.iata_code||null,
+      arr:dest.icao_code||dest.iata_code||null,
+    };
+    const sel=S.ac[S.selIdx];
+    if(sel?.hex===hex)renderPanel(sel);
+  }catch{}
+}<!DOCTYPE html>
 <html lang="it">
 <head>
   <meta charset="UTF-8">
@@ -82,11 +118,11 @@
 <div id="loading">
   <div class="spinner" id="lspinner"></div>
   <div id="ltxt">ACQUISIZIONE SEGNALE GPS...</div>
-  <div id="lver" style="font-size:9px;letter-spacing:3px;font-weight:bold;">SKYRADAR v2.4.2</div>
+  <div id="lver" style="font-size:9px;letter-spacing:3px;font-weight:bold;">SKYRADAR v2.4.3</div>
 </div>
 <div id="app" style="display:none">
   <div id="header">
-    <div class="hlogo"><div class="dot" id="hdot"></div><span>SKYRADAR</span><span class="hver" id="hv">v2.4.2</span></div>
+    <div class="hlogo"><div class="dot" id="hdot"></div><span>SKYRADAR</span><span class="hver" id="hv">v2.4.3</span></div>
     <div id="hclock">--:--:--</div>
     <button class="hbtn" id="themebtn" onclick="cycleTheme()">TEMA</button>
     <button class="hbtn" id="viewbtn" onclick="toggleView()">MAPPA</button>
@@ -115,7 +151,7 @@
 </div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-// SKYRADAR v2.4.2
+// SKYRADAR v2.4.3
 
 // ── TEMI ──────────────────────────────────────────────
 const THEMES={
@@ -256,7 +292,7 @@ function renderFilterBar(){
 function isVisible(ac){return FILTERS[acCat(ac.t||'')||'nb']!==false;}
 
 // ── GEO ───────────────────────────────────────────────
-const S={lat:null,lon:null,radius:50,ac:[],selIdx:0,sweep:0,blips:[],hexCache:{},routeCache:{},airlineCache:{},lastUpd:null,timer:null,dpr:1};
+const S={lat:null,lon:null,radius:50,ac:[],selIdx:0,sweep:0,blips:[],hexCache:{},routeCache:{},lastUpd:null,timer:null,dpr:1};
 let viewMode='radar',map=null,mapMarkers={},userMapMarker=null,radiusCircle=null,SZcss=300;
 
 function haversine(la1,lo1,la2,lo2){const R=6371,dLa=(la2-la1)*Math.PI/180,dLo=(lo2-lo1)*Math.PI/180;const a=Math.sin(dLa/2)**2+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLo/2)**2;return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
@@ -292,9 +328,8 @@ function shareWhatsapp(){
   const hx=S.hexCache[ac.hex]||{};
   const cs=(ac.flight||'').trim()||ac.hex||'—';
   const csKey=cs.replace(/\s/g,'');
-  const rt=S.routeCache[ac.hex]||{};       // rotta da OpenSky (keyed by hex)
-  const al=S.airlineCache[csKey]||{};      // airline da adsbdb (keyed by callsign)
-  const aln=airlineName(cs,hx.op,al.airline);
+  const rt=S.routeCache[csKey]||{};
+  const aln=airlineName(cs,hx.op,rt.airline);
   const dist=S.lat?Math.round(haversine(S.lat,S.lon,ac.lat,ac.lon)):null;
   const altFt=ac.alt_baro??ac.alt_geom;
   const spd=ac.gs!=null?Math.round(ac.gs*1.852):null;
@@ -460,7 +495,7 @@ async function fetchAC(){
     const vis=ac.filter(isVisible);
     document.getElementById('hcount').textContent=vis.length+' IN ZONA';
     if(vis.length===0){document.getElementById('nosig').style.display='';document.getElementById('finfo').style.display='none';}
-    else{document.getElementById('nosig').style.display='none';document.getElementById('finfo').style.display='';renderPanel(ac[S.selIdx]);ac.slice(0,10).forEach(a=>{if(a.hex){fetchHex(a.hex);const cs=(a.flight||'').trim().replace(/\s/g,'');fetchRoute(a.hex,cs);if(cs)fetchAirline(cs);}});}
+    else{document.getElementById('nosig').style.display='none';document.getElementById('finfo').style.display='';renderPanel(ac[S.selIdx]);ac.slice(0,10).forEach(a=>{if(a.hex)fetchHex(a.hex);const cs=(a.flight||'').trim().replace(/\s/g,'');if(cs)fetchRoute(a.hex,cs);});}
     if(viewMode==='map')updateMapView();
   }catch(e){console.warn('fetchAC:',e.message);}
 }
@@ -468,59 +503,36 @@ async function fetchHex(hex){
   if(S.hexCache[hex]!==undefined)return;S.hexCache[hex]=null;
   try{const r=await fetch(`https://hexdb.io/api/v1/aircraft/${hex}`,{signal:AbortSignal.timeout(5000)});if(!r.ok)return;const d=await r.json();const ft=d.Type||d.type||'',mfr=parseMfr(ft);S.hexCache[hex]={type:d.ICAOTypeCode||null,fullType:ft,op:d.RegisteredOwners||d.Operator||null,reg:d.Registration||null,year:d.YearBuilt||d.yearBuilt||null,mfr,model:parseModel(ft,mfr)};const sel=S.ac[S.selIdx];if(sel?.hex===hex)renderPanel(sel);}catch{}
 }
-async function fetchRoute(hex,callsign){
-  // OpenSky: rotta attuale per quel specifico aereo (ICAO24 hex), non per callsign storico
-  if(S.routeCache[hex]!==undefined)return;S.routeCache[hex]=null;
-  try{
-    const now=Math.floor(Date.now()/1000);
-    const url=`https://opensky-network.org/api/flights/aircraft?icao24=${hex}&begin=${now-14400}&end=${now+3600}`;
-    const r=await fetch(url,{signal:AbortSignal.timeout(8000)});
-    if(!r.ok)return;
-    const data=await r.json();
-    if(data&&data.length){
-      const cs=(callsign||'').trim().replace(/\s/g,'').toUpperCase();
-      const fl=data.find(f=>(f.callsign||'').trim().replace(/\s/g,'').toUpperCase()===cs)||data[data.length-1];
-      if(fl.estDepartureAirport||fl.estArrivalAirport){
-        S.routeCache[hex]={dep:fl.estDepartureAirport||null,arr:fl.estArrivalAirport||null,src:'opensky'};
-        const sel=S.ac[S.selIdx];
-        if(sel?.hex===hex)renderPanel(sel);
-        return;
-      }
-    }
-  }catch(e){console.warn('OpenSky:',e.message);}
-  // Fallback: adsbdb (validazione: aereo deve essere lungo la rotta)
-  if(!callsign)return;
-  try{
-    const r=await fetch(`https://api.adsbdb.com/v0/callsign/${callsign}`,{signal:AbortSignal.timeout(6000)});
-    if(!r.ok)return;
-    const d=await r.json();
-    const fr=d?.response?.flightroute;
-    if(!fr||!fr.origin||!fr.destination)return;
-    const ac=S.ac.find(a=>a.hex===hex);
-    let ok=true;
-    if(ac&&fr.origin.latitude&&fr.destination.latitude){
-      const dOD=haversine(fr.origin.latitude,fr.origin.longitude,fr.destination.latitude,fr.destination.longitude);
-      const dOA=haversine(fr.origin.latitude,fr.origin.longitude,ac.lat,ac.lon);
-      const dDA=haversine(fr.destination.latitude,fr.destination.longitude,ac.lat,ac.lon);
-      if(dOD<10||(dOA+dDA)>(dOD*2.5))ok=false;
-    }
-    if(ok){
-      S.routeCache[hex]={dep:fr.origin.icao_code,arr:fr.destination.icao_code,src:'adsbdb'};
-      const sel=S.ac[S.selIdx];
-      if(sel?.hex===hex)renderPanel(sel);
-    }
-  }catch(e){console.warn('adsbdb:',e.message);}
-}
-async function fetchAirline(callsign){
-  // adsbdb: solo nome compagnia (stabile per callsign prefix, non dipende dalla rotta)
-  if(S.airlineCache[callsign]!==undefined)return;S.airlineCache[callsign]=null;
+async function fetchRoute(callsign){
+  if(S.routeCache[callsign]!==undefined)return;
+  S.routeCache[callsign]=null;
   try{
     const r=await fetch(`https://api.adsbdb.com/v0/callsign/${callsign}`,{signal:AbortSignal.timeout(6000)});
     if(!r.ok)return;
     const data=await r.json();
     const fr=data?.response?.flightroute;
     if(!fr)return;
-    S.airlineCache[callsign]={airline:fr.airline?.name||null};
+    S.routeCache[callsign]={
+      airline:fr.airline?.name||null,
+      origin:fr.origin?{
+        icao:fr.origin.icao_code,
+        iata:fr.origin.iata_code,
+        city:fr.origin.municipality,
+        name:fr.origin.name,
+        country:fr.origin.country_iso_name,
+        lat:parseFloat(fr.origin.latitude)||null,
+        lon:parseFloat(fr.origin.longitude)||null
+      }:null,
+      dest:fr.destination?{
+        icao:fr.destination.icao_code,
+        iata:fr.destination.iata_code,
+        city:fr.destination.municipality,
+        name:fr.destination.name,
+        country:fr.destination.country_iso_name,
+        lat:parseFloat(fr.destination.latitude)||null,
+        lon:parseFloat(fr.destination.longitude)||null
+      }:null
+    };
     const sel=S.ac[S.selIdx];
     const selCs=(sel?.flight||'').trim().replace(/\s/g,'');
     if(selCs===callsign)renderPanel(sel);
@@ -752,9 +764,9 @@ function extractData(ac){
   const total=S.ac.filter(isVisible).length,num=S.selIdx+1;
   let phase='—';
   if(altFt!=null){if(altFt<500)phase='A TERRA';else if(altFt<3000)phase=vr&&vr>200?'DECOLLO':(vr&&vr<-200?'FINALE':'CIRCUITO');else if(altFt<8000)phase=vr&&vr>400?'SALITA INIZIALE':(vr&&vr<-400?'AVVICINAMENTO':'TRANSIZIONE');else if(vr&&vr>500)phase='SALITA';else if(vr&&vr<-500)phase='DISCESA';else phase='CROCIERA';}
-  // Rotta: OpenSky (rt.dep/rt.arr) ha priorità, fallback su ADS-B diretto (ac.dep/ac.arr)
-  const depRaw=((rt.dep||ac.dep||'').toUpperCase().replace(/[^A-Z]/g,''));
-  const arrRaw=((rt.arr||ac.arr||'').toUpperCase().replace(/[^A-Z]/g,''));
+  // Rotta: valida adsbdb con coordinate geografiche, fallback su ac.dep/ac.arr ADS-B
+  const depRaw=((rt.dep||ac.dep||'')).toUpperCase().replace(/[^A-Z]/g,'');
+  const arrRaw=((rt.arr||ac.arr||'')).toUpperCase().replace(/[^A-Z]/g,'');
   const depInfo=depRaw?apLookup(depRaw):null;
   const arrInfo=arrRaw?apLookup(arrRaw):null;
   return{cs,aln,typCode,reg,mfr,model,year,pax,dist,altFt,altFtS,altM,spd,vr,trk,total,num,phase,depInfo,arrInfo,hx,rt};
