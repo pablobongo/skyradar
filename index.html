@@ -91,7 +91,7 @@
     <button class="hbtn" id="themebtn" onclick="cycleTheme()">TEMA</button>
     <button class="hbtn" id="viewbtn" onclick="toggleView()">MAPPA</button>
     <button class="hbtn" id="audiobtn" onclick="toggleAudio()">&#128263;</button>
-    <div id="hcount">0 IN ZONA</div>
+    <div id="hcount">&#9992; 0</div>
   </div>
   <div id="filterbar"></div>
   <div id="display-area">
@@ -455,7 +455,7 @@ async function fetchAC(){
     S.ac=ac;S.lastUpd=new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
     if(S.selIdx>=ac.length)S.selIdx=0;
     const vis=ac.filter(isVisible);
-    document.getElementById('hcount').textContent=vis.length+' IN ZONA';
+    document.getElementById('hcount').textContent='✈ '+vis.length;
     if(vis.length===0){document.getElementById('nosig').style.display='';document.getElementById('finfo').style.display='none';}
     else{document.getElementById('nosig').style.display='none';document.getElementById('finfo').style.display='';renderPanel(ac[S.selIdx]);ac.slice(0,10).forEach(a=>{if(a.hex)fetchHex(a.hex);const cs=(a.flight||'').trim().replace(/\s/g,'');if(cs)fetchRoute(cs);});}
     if(viewMode==='map')updateMapView();
@@ -475,17 +475,15 @@ async function fetchRoute(callsign){
     if(!fr)return;
     const orig=fr.origin,dest=fr.destination;
     if(!orig||!dest)return;
-    // Geo-validazione con le coordinate che adsbdb restituisce gia'
+    // Geo-validazione con coordinate adsbdb
     if(orig.latitude&&dest.latitude&&S.lat!==null){
       const oLat=+orig.latitude,oLon=+orig.longitude;
       const dLat=+dest.latitude,dLon=+dest.longitude;
       const dOD=haversine(oLat,oLon,dLat,dLon);
-      // Trova l'aereo per hex (piu' affidabile del callsign per match)
       const acObj=S.ac.find(a=>(a.flight||'').trim().replace(/\s/g,'').toUpperCase()===callsign);
       if(acObj&&dOD>50){
         const dOA=haversine(oLat,oLon,acObj.lat,acObj.lon);
         const dDA=haversine(dLat,dLon,acObj.lat,acObj.lon);
-        // Se l'aereo e' piu' del doppio fuori rotta, scarta
         if((dOA+dDA)>dOD*2.5){S.routeCache[callsign]={};return;}
       }
     }
