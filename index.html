@@ -82,11 +82,11 @@
 <div id="loading">
   <div class="spinner" id="lspinner"></div>
   <div id="ltxt">ACQUISIZIONE SEGNALE GPS...</div>
-  <div id="lver" style="font-size:9px;letter-spacing:3px;font-weight:bold;">SKYRADAR v2.4</div>
+  <div id="lver" style="font-size:9px;letter-spacing:3px;font-weight:bold;">SKYRADAR v2.5</div>
 </div>
 <div id="app" style="display:none">
   <div id="header">
-    <div class="hlogo"><div class="dot" id="hdot"></div><span>SKYRADAR</span><span class="hver" id="hv">v2.4</span></div>
+    <div class="hlogo"><div class="dot" id="hdot"></div><span>SKYRADAR</span><span class="hver" id="hv">v2.5</span></div>
     <div id="hclock">--:--:--</div>
     <button class="hbtn" id="themebtn" onclick="cycleTheme()">TEMA</button>
     <button class="hbtn" id="viewbtn" onclick="toggleView()">MAPPA</button>
@@ -255,7 +255,7 @@ function renderFilterBar(){
 function isVisible(ac){return FILTERS[acCat(ac.t||'')||'nb']!==false;}
 
 // ── GEO ───────────────────────────────────────────────
-const S={lat:null,lon:null,radius:50,ac:[],selIdx:0,sweep:0,blips:[],hexCache:{},routeCache:{},lastUpd:null,timer:null,dpr:1};
+const S={lat:null,lon:null,radius:50,ac:[],selIdx:0,sweep:0,blips:[],routeCache:{},lastUpd:null,timer:null,dpr:1};
 let viewMode='radar',map=null,mapMarkers={},userMapMarker=null,radiusCircle=null,SZcss=300;
 
 function haversine(la1,lo1,la2,lo2){const R=6371,dLa=(la2-la1)*Math.PI/180,dLo=(lo2-lo1)*Math.PI/180;const a=Math.sin(dLa/2)**2+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLo/2)**2;return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
@@ -285,26 +285,24 @@ let wakeLock=null;
 async function requestWakeLock(){if(!('wakeLock'in navigator))return;try{wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',()=>{wakeLock=null;});}catch(e){}}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&!wakeLock)requestWakeLock();});
 
-// ── WHATSAPP SHARE ────────────────────────────────────
 function shareWhatsapp(){
   const ac=S.ac[S.selIdx];if(!ac)return;
-  const hx=S.hexCache[ac.hex]||{};
   const cs=(ac.flight||'').trim()||ac.hex||'—';
   const csKey=cs.replace(/\s/g,'');
   const rt=S.routeCache[csKey]||{};
-  const aln=airlineName(cs,hx.op,rt.airline);
+  const aln=airlineName(cs,null,rt.airline);
   const dist=S.lat?Math.round(haversine(S.lat,S.lon,ac.lat,ac.lon)):null;
   const altFt=ac.alt_baro??ac.alt_geom;
   const spd=ac.gs!=null?Math.round(ac.gs*1.852):null;
   const dep=rt.origin?`${rt.origin.iata||rt.origin.icao}${rt.origin.city?' ('+rt.origin.city+')':''}`:((ac.dep||'').toUpperCase()||'—');
   const arr=rt.dest?`${rt.dest.iata||rt.dest.icao}${rt.dest.city?' ('+rt.dest.city+')':''}`:((ac.arr||'').toUpperCase()||'—');
-  const typ=(ac.t||hx.type||'');
-  const mfr=hx.mfr||mfrFromCode(typ)||'';
+  const typ=ac.t||'';
+  const mfr=mfrFromCode(typ)||'';
+  const reg=ac.r||'';
   const lines=[
     `✈ *${cs}*${aln?' — '+aln:''}`,
-    dep!=='—'?`🛫 ${dep} → 🛬 ${arr}`:'',
-    mfr||typ?`🔧 ${[mfr,typ].filter(Boolean).join(' ')}${hx.reg?' · '+hx.reg:''}`:'',
-    hx.year?`📅 Anno: ${hx.year}`:'',
+    dep&&dep!=='—'?`🛫 ${dep} → 🛬 ${arr}`:'',
+    mfr||typ?`🔧 ${[mfr,typ].filter(Boolean).join(' ')}${reg?' · '+reg:''}`:'',
     dist!=null?`📍 Distanza: ${dist} km`:'',
     altFt!=null?`📡 Quota: ${Math.round(altFt).toLocaleString()} ft`:'',
     spd!=null?`💨 Velocità: ${spd} km/h`:'',
@@ -457,13 +455,9 @@ async function fetchAC(){
     const vis=ac.filter(isVisible);
     document.getElementById('hcount').textContent='✈ '+vis.length;
     if(vis.length===0){document.getElementById('nosig').style.display='';document.getElementById('finfo').style.display='none';}
-    else{document.getElementById('nosig').style.display='none';document.getElementById('finfo').style.display='';renderPanel(ac[S.selIdx]);ac.slice(0,10).forEach(a=>{if(a.hex)fetchHex(a.hex);const cs=(a.flight||'').trim().replace(/\s/g,'');if(cs){fetchRoute(cs);setTimeout(()=>{if(!S.routeCache[cs]||(!S.routeCache[cs].origin&&!S.routeCache[cs].dest))fetchAeroDataBox(cs,a.hex);},3000);}});}
+    else{document.getElementById('nosig').style.display='none';document.getElementById('finfo').style.display='';renderPanel(ac[S.selIdx]);ac.slice(0,10).forEach(a=>{const cs=(a.flight||'').trim().replace(/\s/g,'');if(cs)fetchRoute(cs);});}
     if(viewMode==='map')updateMapView();
   }catch(e){console.warn('fetchAC:',e.message);}
-}
-async function fetchHex(hex){
-  if(S.hexCache[hex]!==undefined)return;S.hexCache[hex]=null;
-  try{const r=await fetch(`https://hexdb.io/api/v1/aircraft/${hex}`,{signal:AbortSignal.timeout(5000)});if(!r.ok)return;const d=await r.json();const ft=d.Type||d.type||'',mfr=parseMfr(ft);S.hexCache[hex]={type:d.ICAOTypeCode||null,fullType:ft,op:d.RegisteredOwners||d.Operator||null,reg:d.Registration||null,year:d.YearBuilt||d.yearBuilt||null,mfr,model:parseModel(ft,mfr)};const sel=S.ac[S.selIdx];if(sel?.hex===hex)renderPanel(sel);}catch{}
 }
 async function fetchRoute(callsign){
   if(S.routeCache[callsign]!==undefined)return;S.routeCache[callsign]=null;
@@ -475,6 +469,7 @@ async function fetchRoute(callsign){
     if(!fr)return;
     const orig=fr.origin,dest=fr.destination;
     if(!orig||!dest)return;
+    // Geo-validazione: scarta rotte storicamente sbagliate
     if(orig.latitude&&dest.latitude&&S.lat!==null){
       const oLat=+orig.latitude,oLon=+orig.longitude;
       const dLat=+dest.latitude,dLon=+dest.longitude;
@@ -497,87 +492,16 @@ async function fetchRoute(callsign){
   }catch{}
 }
 
-// ── AERODATABOX FALLBACK ─────────────────────────────
-// Mappa prefissi ICAO (3 lettere) → IATA (2 lettere) per conversione callsign→numero volo
-const ICAO2IATA_AL={AZA:'AZ',RYR:'FR',EZY:'U2',VLG:'VY',IBE:'IB',BAW:'BA',DLH:'LH',AFR:'AF',
-  KLM:'KL',THY:'TK',UAE:'EK',QTR:'QR',ETD:'EY',SWR:'LX',AUA:'OS',TAP:'TP',SAS:'SK',
-  NAX:'DY',WZZ:'W6',TVS:'HV',AEE:'A3',VOE:'V7',EIN:'EI',FIN:'AY',BEL:'SN',AAL:'AA',
-  UAL:'UA',DAL:'DL',SWA:'WN',NOS:'NO',TOM:'BY',MSR:'MS',SVA:'SV',ELY:'LY',RAM:'AT',
-  GFA:'GF',PGT:'PC',QFA:'QF',SIA:'SQ',MAS:'MH',THA:'TG',ANA:'NH',JAL:'JL',KAL:'KE',
-  AAR:'OZ',RUK:'BY',KMM:'KM',RYR:'FR',EJU:'U2',IBK:'I2',VKG:'VK',CFG:'XG',
-  WZZ:'W6',WUK:'W9',LOT:'LO',CSN:'CZ',CCA:'CA',CES:'MU',CHH:'HU'};
-function callsignToFlightNum(cs){
-  // Prova prefisso 3 lettere → IATA 2 lettere + numero
-  const p3=cs.substring(0,3).toUpperCase();
-  const p2=cs.substring(0,2).toUpperCase();
-  const num=cs.replace(/^[A-Z]+/,'');
-  if(ICAO2IATA_AL[p3])return ICAO2IATA_AL[p3]+num;
-  // Prova prefisso 2 lettere direttamente (es. già formato IATA)
-  return cs; // fallback: usa callsign as-is
-}
-async function fetchAeroDataBox(callsign,hex){
-  if(S.routeCache[callsign]!==undefined)return;
-  const key=localStorage.getItem('sr_aero_key');
-  if(!key)return;
-  // Prova prima con numero volo convertito, poi con hex ICAO24
-  const flNum=callsignToFlightNum(callsign);
-  const urls=[
-    'https://aerodatabox.p.rapidapi.com/flights/number/'+flNum+'?withAircraftImage=false&withLocation=false',
-  ];
-  if(hex)urls.push('https://aerodatabox.p.rapidapi.com/flights/icao24/'+hex+'?withAircraftImage=false&withLocation=false');
-  for(const url of urls){
-    try{
-      const r=await fetch(url,{
-        signal:AbortSignal.timeout(8000),
-        headers:{'x-rapidapi-host':'aerodatabox.p.rapidapi.com','x-rapidapi-key':key}
-      });
-      if(!r.ok)continue;
-      const data=await r.json();
-      const fl=Array.isArray(data)?data[0]:data;
-      if(!fl)continue;
-      const dep=fl.departure?.airport,arr=fl.arrival?.airport;
-      if(!dep&&!arr)continue;
-      S.routeCache[callsign]={
-        airline:fl.airline?.name||null,
-        origin:dep?{icao:dep.icao,iata:dep.iata,city:dep.municipalityName||dep.name,name:dep.name,country:dep.countryCode}:null,
-        dest:arr?{icao:arr.icao,iata:arr.iata,city:arr.municipalityName||arr.name,name:arr.name,country:arr.countryCode}:null
-      };
-      const sel=S.ac[S.selIdx];
-      const selCs=(sel?.flight||'').trim().replace(/\s/g,'');
-      if(selCs===callsign)renderPanel(sel);
-      return;
-    }catch{}
-  }
-}
-function liveBtn(cs){
-  const url='https://www.flightaware.com/live/flight/'+cs.trim().replace(/\s/g,'');
-  return `<button onclick="window.open('${url}','_blank')" style="background:none;border:1px solid ${T.gf};color:${T.g};font-size:9px;font-weight:bold;padding:2px 8px;cursor:pointer;font-family:inherit;letter-spacing:1px;">&#9992; LIVE</button>`;
-}
-function keyBtn(){
-  const has=!!localStorage.getItem('sr_aero_key');
-  return `<button onclick="setAeroKey()" style="background:none;border:1px solid ${T.gf};color:${has?T.g:T.gm};font-size:9px;font-weight:bold;padding:2px 8px;cursor:pointer;font-family:inherit;letter-spacing:1px;" title="${has?'Chiave AeroDataBox salvata':'Imposta chiave AeroDataBox'}">${has?'&#128273;':'&#128274;'} API</button>`;
-}
-function setAeroKey(){
-  const cur=localStorage.getItem('sr_aero_key')||'';
-  const k=prompt('Chiave RapidAPI AeroDataBox:\n(cancella tutto per rimuoverla)',cur);
-  if(k===null)return;
-  if(k.trim())localStorage.setItem('sr_aero_key',k.trim());
-  else localStorage.removeItem('sr_aero_key');
-  renderPanel(S.ac[S.selIdx]);
-}
-
 // ── RENDER PANEL ──────────────────────────────────────
 function extractData(ac){
-  const hx=S.hexCache[ac.hex]||{};
   const cs=(ac.flight||'').trim()||ac.hex||'—';
   const csKey=cs.replace(/\s/g,'');
   const rt=S.routeCache[csKey]||{};
-  const aln=airlineName(cs,hx.op,rt.airline);
-  const typCode=(ac.t||hx.type||'').toUpperCase()||'—';
-  const reg=hx.reg||'—';
-  const mfr=hx.mfr||mfrFromCode(typCode);
-  const model=hx.model||'—';
-  const year=hx.year||'—';
+  // tipo e registrazione vengono direttamente dal feed airplanes.live (ac.t, ac.r)
+  const typCode=(ac.t||'').toUpperCase()||'—';
+  const reg=ac.r||'—';
+  const mfr=mfrFromCode(typCode);
+  const aln=airlineName(cs,null,rt.airline);
   const pax=CAP[typCode]?CAP[typCode]+' pax':'—';
   const dist=S.lat?Math.round(haversine(S.lat,S.lon,ac.lat,ac.lon)):'—';
   const altFt=ac.alt_baro??ac.alt_geom;
@@ -590,18 +514,17 @@ function extractData(ac){
   let phase='—';
   if(altFt!=null){if(altFt<500)phase='A TERRA';else if(altFt<3000)phase=vr&&vr>200?'DECOLLO':(vr&&vr<-200?'FINALE':'CIRCUITO');else if(altFt<8000)phase=vr&&vr>400?'SALITA INIZIALE':(vr&&vr<-400?'AVVICINAMENTO':'TRANSIZIONE');else if(vr&&vr>500)phase='SALITA';else if(vr&&vr<-500)phase='DISCESA';else phase='CROCIERA';}
   const depRaw=(ac.dep||'').toUpperCase().replace(/[^A-Z]/g,''),arrRaw=(ac.arr||'').toUpperCase().replace(/[^A-Z]/g,'');
-  // Priorità ai codici ADS-B diretti (trasmessi dall'aereo, sempre relativi al volo corrente).
-  // adsbdb può avere dati storici obsoleti per lo stesso callsign: lo usiamo solo se i codici ICAO/IATA coincidono.
+  // Priorità ai codici ADS-B diretti; adsbdb solo se i codici coincidono
   function resolveAp(raw,rtInfo){
     if(raw){
-      if(rtInfo&&(rtInfo.icao===raw||rtInfo.iata===raw))return rtInfo; // match: dati completi da adsbdb
-      return{icao:raw,iata:raw.length===3?raw:null,city:'',name:'',country:''}; // no match: solo codice ADS-B
+      if(rtInfo&&(rtInfo.icao===raw||rtInfo.iata===raw))return rtInfo;
+      return{icao:raw,iata:raw.length===3?raw:null,city:'',name:'',country:''};
     }
-    return null;
+    return rtInfo||null;
   }
   const depInfo=resolveAp(depRaw,rt.origin);
   const arrInfo=resolveAp(arrRaw,rt.dest);
-  return{cs,aln,typCode,reg,mfr,model,year,pax,dist,altFt,altFtS,altM,spd,vr,trk,total,num,phase,depInfo,arrInfo,hx,rt};
+  return{cs,aln,typCode,reg,mfr,pax,dist,altFt,altFtS,altM,spd,vr,trk,total,num,phase,depInfo,arrInfo,rt};
 }
 
 function renderPanel(ac){
@@ -612,7 +535,8 @@ function renderPanel(ac){
   else renderRadar(ac,d);
 }
 
-function shareBtn(){return `<button onclick="shareWhatsapp()" style="float:right;background:none;border:1px solid ${T.gf};color:${T.g};font-size:9px;font-weight:bold;padding:2px 8px;cursor:pointer;font-family:inherit;letter-spacing:1px;">&#128172; WA</button>`;}
+function shareBtn(){return `<button onclick="shareWhatsapp()" style="background:none;border:1px solid ${T.gf};color:${T.g};font-size:9px;font-weight:bold;padding:2px 8px;cursor:pointer;font-family:inherit;letter-spacing:1px;">&#128172; WA</button>`;}
+function liveBtn(cs){const url='https://www.flightaware.com/live/flight/'+cs.trim().replace(/\s/g,'');return `<button onclick="window.open('${url}','_blank')" style="background:none;border:1px solid ${T.gf};color:${T.g};font-size:9px;font-weight:bold;padding:2px 8px;cursor:pointer;font-family:inherit;letter-spacing:1px;">&#9992; LIVE</button>`;}
 
 function apBlockStd(info,lbl,align){
   if(!info)return`<div class="ap" style="text-align:${align};color:${T.col}"><div class="ap-code" style="color:${T.gm}">—</div><div class="ap-lbl" style="color:${T.gm}">${lbl}</div></div>`;
@@ -620,7 +544,7 @@ function apBlockStd(info,lbl,align){
   return`<div class="ap" style="text-align:${align};color:${T.col}">${info.country?flagImg(info.country):''}<div class="ap-code" style="color:${T.colW}">${dc}</div>${info.city?`<div class="ap-city" style="color:${T.g}">${info.city}</div>`:''} ${info.name?`<div class="ap-name" style="color:${T.gm}">${info.name}</div>`:''}<div class="ap-lbl" style="color:${T.gm}">${lbl}</div></div>`;
 }
 
-function renderRadar(ac,d){
+
   const g=T.g,gm=T.gm,gf=T.gf,cw=T.colW;
   const vrStr=d.vr!=null?`<span style="color:${d.vr>80?g:d.vr<-80?'#ff7040':'#aaffcc'}">${d.vr>80?'&#8593;':d.vr<-80?'&#8595;':'&#8594;'}${Math.abs(Math.round(d.vr))}</span>`:'—';
   document.getElementById('finfo').innerHTML=`
@@ -631,10 +555,10 @@ function renderRadar(ac,d){
     <div class="acspecs" style="border-color:${gf}">
       <div class="acrow" style="border-bottom-color:${gf}">
         <div class="acfield" style="border-right-color:${gf}"><div class="acfl" style="color:${gm}">COSTRUTTORE</div><div class="acfv" style="color:${cw}">${d.mfr||'—'}</div></div>
-        <div class="acfield"><div class="acfl" style="color:${gm}">MODELLO</div><div class="acfv" style="color:${cw}">${d.model}</div></div>
+        <div class="acfield"><div class="acfl" style="color:${gm}">TIPO</div><div class="acfv" style="color:${cw}">${d.typCode}</div></div>
       </div>
       <div class="acrow">
-        <div class="acfield" style="border-right-color:${gf}"><div class="acfl" style="color:${gm}">ANNO</div><div class="acfv" style="color:${cw}">${d.year}</div></div>
+        <div class="acfield" style="border-right-color:${gf}"><div class="acfl" style="color:${gm}">REG.</div><div class="acfv" style="color:${cw}">${d.reg}</div></div>
         <div class="acfield"><div class="acfl" style="color:${gm}">CAPACIT&Agrave;</div><div class="acfv" style="color:${cw}">${d.pax}</div></div>
       </div>
     </div>
@@ -647,7 +571,7 @@ function renderRadar(ac,d){
       <div class="sbox" style="border-color:${gf}"><div class="sv" style="color:${cw}">${d.altM!=null?(d.altM/1000).toFixed(1)+'k':'—'}</div><div class="sl" style="color:${gm}">METRI</div></div>
       <div class="sbox" style="border-color:${gf}"><div class="sv">${vrStr}</div><div class="sl" style="color:${gm}">FT/MIN</div></div>
     </div>
-    <div class="pbar" style="border-top-color:${gf};color:${g}">${keyBtn()} ${liveBtn(d.cs)} ${shareBtn()}<span>FASE: <strong>${d.phase}</strong></span><span>${S.lastUpd?'&#10227; '+S.lastUpd:''}</span></div>`;
+    <div class="pbar" style="border-top-color:${gf};color:${g};display:flex;gap:6px;align-items:center;flex-wrap:wrap;">${liveBtn(d.cs)} ${shareBtn()} <span style="margin-left:auto">FASE: <strong>${d.phase}</strong></span><span>${S.lastUpd?'&#10227; '+S.lastUpd:''}</span></div>`;
 }
 
 function renderFids(ac,d){
@@ -696,9 +620,9 @@ function renderFids(ac,d){
       </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:${gf};border:1px solid ${gf};margin-bottom:10px">
-      <div style="background:${bg};padding:8px 10px"><div style="font-size:8px;color:${gm};letter-spacing:2px">AEROMOBILE</div><div style="font-size:13px;font-weight:bold;color:#fff;margin-top:3px">${d.mfr?d.mfr+' ':''} ${d.model!=='—'?d.model:d.typCode}</div></div>
+      <div style="background:${bg};padding:8px 10px"><div style="font-size:8px;color:${gm};letter-spacing:2px">AEROMOBILE</div><div style="font-size:13px;font-weight:bold;color:#fff;margin-top:3px">${d.mfr?d.mfr+' ':''} ${d.typCode}</div></div>
       <div style="background:${bg};padding:8px 10px"><div style="font-size:8px;color:${gm};letter-spacing:2px">REGISTRAZIONE</div><div style="font-size:13px;font-weight:bold;color:#fff;margin-top:3px">${d.reg}</div></div>
-      <div style="background:${bg};padding:8px 10px"><div style="font-size:8px;color:${gm};letter-spacing:2px">ANNO / PAX</div><div style="font-size:13px;font-weight:bold;color:#fff;margin-top:3px">${d.year} / ${d.pax}</div></div>
+      <div style="background:${bg};padding:8px 10px"><div style="font-size:8px;color:${gm};letter-spacing:2px">CAPACIT&Agrave;</div><div style="font-size:13px;font-weight:bold;color:#fff;margin-top:3px">${d.pax}</div></div>
       <div style="background:${bg};padding:8px 10px"><div style="font-size:8px;color:${gm};letter-spacing:2px">DISTANZA</div><div style="font-size:13px;font-weight:bold;color:#fff;margin-top:3px">${d.dist} km</div></div>
       <div style="background:${bg};padding:8px 10px"><div style="font-size:8px;color:${gm};letter-spacing:2px">QUOTA</div><div style="font-size:13px;font-weight:bold;color:#fff;margin-top:3px">${d.altFtS} ft</div></div>
       <div style="background:${bg};padding:8px 10px"><div style="font-size:8px;color:${gm};letter-spacing:2px">VELOCIT&Agrave;</div><div style="font-size:13px;font-weight:bold;color:#fff;margin-top:3px">${d.spd!=null?d.spd:'—'} km/h</div></div>
@@ -725,8 +649,7 @@ function renderHud(ac,d){
         <div>
           <div style="font-size:clamp(28px,8vw,40px);font-weight:700;color:#f0f9ff;letter-spacing:2px;line-height:1">${d.cs}</div>
           <div style="font-size:11px;color:rgba(148,163,184,1);margin-top:4px">${d.aln||'—'}</div>
-          <div style="font-size:11px;color:${g};margin-top:2px">${d.mfr?d.mfr+' ':''} ${d.model!=='—'?d.model:''} ${d.reg!=='—'?'· '+d.reg:''}</div>
-          ${d.year!=='—'||d.pax!=='—'?`<div style="font-size:10px;color:${gm};margin-top:3px">${d.year!=='—'?'Anno '+d.year:''} ${d.pax!=='—'?'· '+d.pax:''}</div>`:''}
+          <div style="font-size:11px;color:${g};margin-top:2px">${d.mfr?d.mfr+' ':''} ${d.typCode} ${d.reg!=='—'?'· '+d.reg:''}</div>
         </div>
         ${compass?`<div>${compass}</div>`:''}
       </div>
