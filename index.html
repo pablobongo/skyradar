@@ -545,6 +545,7 @@ function apBlockStd(info,lbl,align){
 }
 
 
+function renderRadar(ac,d){
   const g=T.g,gm=T.gm,gf=T.gf,cw=T.colW;
   const vrStr=d.vr!=null?`<span style="color:${d.vr>80?g:d.vr<-80?'#ff7040':'#aaffcc'}">${d.vr>80?'&#8593;':d.vr<-80?'&#8595;':'&#8594;'}${Math.abs(Math.round(d.vr))}</span>`:'—';
   document.getElementById('finfo').innerHTML=`
