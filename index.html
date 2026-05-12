@@ -83,11 +83,11 @@
 <div id="loading">
   <div class="spinner" id="lspinner"></div>
   <div id="ltxt">ACQUISIZIONE SEGNALE GPS...</div>
-  <div id="lver" style="font-size:9px;letter-spacing:3px;font-weight:bold;">SKYRADAR v2.5</div>
+  <div id="lver" style="font-size:9px;letter-spacing:3px;font-weight:bold;">SKYRADAR v2.6</div>
 </div>
 <div id="app" style="display:none">
   <div id="header">
-    <div class="hlogo"><div class="dot" id="hdot"></div><span>SKYRADAR</span><span class="hver" id="hv">v2.5</span></div>
+    <div class="hlogo"><div class="dot" id="hdot"></div><span>SKYRADAR</span><span class="hver" id="hv">v2.6</span></div>
     <div id="hclock">--:--:--</div>
     <button class="hbtn" id="themebtn" onclick="cycleTheme()">TEMA</button>
     <button class="hbtn" id="viewbtn" onclick="toggleView()">MAPPA</button>
@@ -115,7 +115,7 @@
 </div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-// SKYRADAR v2.5
+// SKYRADAR v2.6
 
 // ── TEMI ──────────────────────────────────────────────
 const THEMES={
@@ -517,11 +517,10 @@ function extractData(ac){
   const depRaw=(ac.dep||'').toUpperCase().replace(/[^A-Z]/g,''),arrRaw=(ac.arr||'').toUpperCase().replace(/[^A-Z]/g,'');
   // Priorità ai codici ADS-B diretti; adsbdb solo se i codici coincidono
   function resolveAp(raw,rtInfo){
-    if(raw){
-      if(rtInfo&&(rtInfo.icao===raw||rtInfo.iata===raw))return rtInfo;
-      return{icao:raw,iata:raw.length===3?raw:null,city:'',name:'',country:''};
-    }
-    return rtInfo||null;
+    // adsbdb (dati schedulati) è più affidabile del codice transponder (spesso stale)
+    if(rtInfo)return rtInfo;
+    if(raw)return{icao:raw,iata:raw.length===3?raw:null,city:'',name:'',country:''};
+    return null;
   }
   const depInfo=resolveAp(depRaw,rt.origin);
   const arrInfo=resolveAp(arrRaw,rt.dest);
@@ -601,7 +600,7 @@ function renderFids(ac,d){
     </div>`;
   }).join('');
   document.getElementById('finfo').innerHTML=`
-    <div style="font-size:9px;letter-spacing:4px;color:${gm};border-bottom:1px solid ${gf};padding-bottom:6px;margin-bottom:10px;display:flex;justify-content:space-between;">${shareBtn()}<span>VOL SELEZIONATO</span><span>${d.num}/${d.total}</span></div>
+    <div style="font-size:9px;letter-spacing:4px;color:${gm};border-bottom:1px solid ${gf};padding-bottom:6px;margin-bottom:10px;display:flex;justify-content:space-between;"><div style="display:flex;gap:4px">${shareBtn()} ${liveBtn(d.cs)}</div><span>VOL SELEZIONATO</span><span>${d.num}/${d.total}</span></div>
     <div style="font-size:clamp(32px,10vw,54px);font-weight:bold;text-align:center;letter-spacing:8px;color:${g};text-shadow:0 0 24px ${g};margin-bottom:3px">${d.cs}</div>
     <div style="text-align:center;font-size:12px;letter-spacing:4px;color:${gm};margin-bottom:14px">${d.aln||'—'}</div>
     <div style="display:grid;grid-template-columns:1fr 2px 1fr;border:1px solid ${gf};margin-bottom:10px;">
@@ -646,7 +645,7 @@ function renderHud(ac,d){
   document.getElementById('finfo').innerHTML=`
     ${d.total>1?`<div class="nav-hint" style="color:${gm}">&#9992; ${d.num}/${d.total} &middot; TAP PER SELEZIONARE</div>`:''}
     <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:12px;padding:12px;margin-bottom:10px;">
-      <div style="font-size:9px;color:${g};letter-spacing:2px;margin-bottom:8px;font-weight:600;display:flex;justify-content:space-between">${shareBtn()}<span>AEREO PIÙ VICINO</span><span style="opacity:.4">${d.typCode}</span></div>
+      <div style="font-size:9px;color:${g};letter-spacing:2px;margin-bottom:8px;font-weight:600;display:flex;justify-content:space-between"><div style="display:flex;gap:4px">${shareBtn()} ${liveBtn(d.cs)}</div><span>AEREO PIÙ VICINO</span><span style="opacity:.4">${d.typCode}</span></div>
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div>
           <div style="font-size:clamp(28px,8vw,40px);font-weight:700;color:#f0f9ff;letter-spacing:2px;line-height:1">${d.cs}</div>
