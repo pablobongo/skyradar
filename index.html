@@ -7,6 +7,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <meta name="theme-color" content="#030a03">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="SkyRadar">
@@ -446,9 +447,10 @@ async function fetchAC(){
   const nm=Math.max(11,Math.ceil(S.radius/1.852));
   try{
     const r=await fetch(`https://api.airplanes.live/v2/point/${S.lat}/${S.lon}/${nm}`,{signal:AbortSignal.timeout(8000)});
-    if(!r.ok)return;
+    if(!r.ok)return; // mantieni S.ac invariato su 429/errore
     const data=await r.json();
-    let ac=(data.ac||[]).filter(a=>a.lat&&a.lon);
+    if(!data.ac)return; // risposta malformata: mantieni S.ac invariato
+    let ac=data.ac.filter(a=>a.lat&&a.lon);
     ac.sort((a,b)=>haversine(S.lat,S.lon,a.lat,a.lon)-haversine(S.lat,S.lon,b.lat,b.lon));
     S.ac=ac;S.lastUpd=new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
     if(S.selIdx>=ac.length)S.selIdx=0;
@@ -703,7 +705,7 @@ function startApp(lat,lon){
   if(rafId)cancelAnimationFrame(rafId);
   drawRadar();fetchAC();
   if(S.timer)clearInterval(S.timer);
-  S.timer=setInterval(fetchAC,5000);
+  S.timer=setInterval(fetchAC,10000);
   requestWakeLock();
 }
 
