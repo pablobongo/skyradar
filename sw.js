@@ -35,6 +35,7 @@ self.addEventListener('fetch', e => {
   if (url.hostname.includes('airplanes.live') ||
       url.hostname.includes('hexdb.io') ||
       url.hostname.includes('adsbdb.com') ||
+      url.hostname.includes('opensky-network.org') ||
       url.hostname.includes('aerodatabox') ||
       url.hostname.includes('rapidapi.com') ||
       url.hostname.includes('openstreetmap.org') ||

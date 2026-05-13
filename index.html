@@ -456,41 +456,88 @@ async function fetchAC(){
     const vis=ac.filter(isVisible);
     document.getElementById('hcount').textContent='✈ '+vis.length;
     if(vis.length===0){document.getElementById('nosig').style.display='';document.getElementById('finfo').style.display='none';}
-    else{document.getElementById('nosig').style.display='none';document.getElementById('finfo').style.display='';renderPanel(ac[S.selIdx]);ac.slice(0,10).forEach(a=>{const cs=(a.flight||'').trim().replace(/\s/g,'');if(cs)fetchRoute(cs);});}
+    else{document.getElementById('nosig').style.display='none';document.getElementById('finfo').style.display='';renderPanel(ac[S.selIdx]);ac.slice(0,10).forEach(a=>{const cs=(a.flight||'').trim().replace(/\s/g,'');if(cs)fetchRoute(cs,a.hex);});}
     if(viewMode==='map')updateMapView();
   }catch(e){console.warn('fetchAC:',e.message);}
 }
-async function fetchRoute(callsign){
-  if(S.routeCache[callsign]!==undefined)return;S.routeCache[callsign]=null;
+// ── OPENSKY ───────────────────────────────────────────
+const OPENSKY={
+  id:'pablo8000-api-client',
+  secret:'4dEu3jJbiSeS42gHu3NHVdDPlDDEihhh',
+  token:null,expiry:0
+};
+async function osToken(){
+  if(OPENSKY.token&&Date.now()<OPENSKY.expiry-30000)return OPENSKY.token;
+  try{
+    const r=await fetch('https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token',{
+      method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body:new URLSearchParams({grant_type:'client_credentials',client_id:OPENSKY.id,client_secret:OPENSKY.secret}),
+      signal:AbortSignal.timeout(6000)
+    });
+    if(!r.ok)return null;
+    const d=await r.json();
+    OPENSKY.token=d.access_token;OPENSKY.expiry=Date.now()+d.expires_in*1000;
+    return OPENSKY.token;
+  }catch{return null;}
+}
+async function fetchRouteOpenSky(hex){
+  const tok=await osToken();if(!tok)return null;
+  const now=Math.floor(Date.now()/1000),begin=now-4*3600;
+  try{
+    const r=await fetch(`https://opensky-network.org/api/flights/aircraft?icao24=${hex.toLowerCase()}&begin=${begin}&end=${now}`,
+      {headers:{Authorization:'Bearer '+tok},signal:AbortSignal.timeout(7000)});
+    if(!r.ok)return null;
+    const flights=await r.json();
+    if(!Array.isArray(flights)||!flights.length)return null;
+    const f=flights.sort((a,b)=>b.firstSeen-a.firstSeen)[0];
+    if(!f.estDepartureAirport&&!f.estArrivalAirport)return null;
+    return{
+      airline:null,
+      origin:f.estDepartureAirport?{icao:f.estDepartureAirport,iata:null,city:'',name:'',country:''}:null,
+      dest:f.estArrivalAirport?{icao:f.estArrivalAirport,iata:null,city:'',name:'',country:''}:null
+    };
+  }catch{return null;}
+}
+
+const ROUTE_TTL=7200000; // 2 ore
+async function fetchRoute(callsign,hex){
+  // TTL: scade dopo 2 ore per rotte non trovate o potenzialmente stale
+  const cached=S.routeCache[callsign];
+  if(cached!==undefined){
+    if(cached&&cached._ts&&Date.now()-cached._ts<ROUTE_TTL)return;
+    if(cached&&cached.origin&&cached._ts&&Date.now()-cached._ts<ROUTE_TTL*3)return; // rotte valide: 6h
+    delete S.routeCache[callsign];
+  }
+  S.routeCache[callsign]=null;
+
+  // 1. adsbdb (dati schedules, ha città/bandiera)
   try{
     const r=await fetch(`https://api.adsbdb.com/v0/callsign/${callsign}`,{signal:AbortSignal.timeout(6000)});
-    if(!r.ok)return;
-    const data=await r.json();
-    const fr=data?.response?.flightroute;
-    if(!fr)return;
-    const orig=fr.origin,dest=fr.destination;
-    if(!orig||!dest)return;
-    // Geo-validazione: scarta rotte storicamente sbagliate
-    if(orig.latitude&&dest.latitude&&S.lat!==null){
-      const oLat=+orig.latitude,oLon=+orig.longitude;
-      const dLat=+dest.latitude,dLon=+dest.longitude;
-      const dOD=haversine(oLat,oLon,dLat,dLon);
-      const acObj=S.ac.find(a=>(a.flight||'').trim().replace(/\s/g,'').toUpperCase()===callsign);
-      if(acObj&&dOD>50){
-        const dOA=haversine(oLat,oLon,acObj.lat,acObj.lon);
-        const dDA=haversine(dLat,dLon,acObj.lat,acObj.lon);
-        if((dOA+dDA)>dOD*2.5){S.routeCache[callsign]={};return;}
+    if(r.ok){
+      const data=await r.json();
+      const fr=data?.response?.flightroute;
+      const orig=fr?.origin,dest=fr?.destination;
+      if(orig&&dest){
+        S.routeCache[callsign]={_ts:Date.now(),airline:fr.airline?.name||null,
+          origin:{icao:orig.icao_code,iata:orig.iata_code,city:orig.municipality,name:orig.name,country:orig.country_iso_name},
+          dest:{icao:dest.icao_code,iata:dest.iata_code,city:dest.municipality,name:dest.name,country:dest.country_iso_name}};
+        const sel=S.ac[S.selIdx];if((sel?.flight||'').trim().replace(/\s/g,'')===callsign)renderPanel(sel);
+        return;
       }
     }
-    S.routeCache[callsign]={
-      airline:fr.airline?.name||null,
-      origin:orig?{icao:orig.icao_code,iata:orig.iata_code,city:orig.municipality,name:orig.name,country:orig.country_iso_name}:null,
-      dest:dest?{icao:dest.icao_code,iata:dest.iata_code,city:dest.municipality,name:dest.name,country:dest.country_iso_name}:null
-    };
-    const sel=S.ac[S.selIdx];
-    const selCs=(sel?.flight||'').trim().replace(/\s/g,'');
-    if(selCs===callsign)renderPanel(sel);
   }catch{}
+
+  // 2. OpenSky fallback (dati ADS-B reali, ICAO only)
+  if(hex){
+    const os=await fetchRouteOpenSky(hex);
+    if(os){
+      S.routeCache[callsign]={_ts:Date.now(),...os};
+      const sel=S.ac[S.selIdx];if((sel?.flight||'').trim().replace(/\s/g,'')===callsign)renderPanel(sel);
+      return;
+    }
+  }
+
+  S.routeCache[callsign]={_ts:Date.now()};
 }
 
 // ── RENDER PANEL ──────────────────────────────────────
