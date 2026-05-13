@@ -1,5 +1,5 @@
-// SkyRadar Service Worker v2.6
-const CACHE = 'skyradar-v26';
+// SkyRadar Service Worker v2.7
+const CACHE = 'skyradar-v27';
 const BASE = self.location.pathname.replace('/sw.js', '');
 
 const SHELL = [
